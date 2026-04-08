@@ -109,7 +109,6 @@ function Branch() {
 
   // DELETE - Open confirmation modal
   const openDeleteModal = (branch) => {
-    console.log("[v0] Opening delete modal for:", branch)
     setDeleteModal({ isOpen: true, branch })
   }
 
