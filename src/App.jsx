@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import Layout from './components/Layout'
 import Dashboard from './pages/Dashboard'
 import Branch from './pages/Branch'
+import Courses from './pages/Courses'
 
 function App() {
   return (
@@ -10,6 +11,7 @@ function App() {
         <Route index element={<Navigate to="/dashboard" replace />} />
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="branch" element={<Branch />} />
+        <Route path="courses" element={<Courses />} />
       </Route>
     </Routes>
   )
