@@ -9,7 +9,8 @@ import {
   ChevronRight,
   X,
   Building2,
-  ArrowUpDown
+  ArrowUpDown,
+  AlertTriangle
 } from 'lucide-react'
 
 const API = 'http://localhost:9998/branch'
@@ -25,6 +26,9 @@ function Branch() {
     remarks: '',
   })
   const [editId, setEditId] = useState(null)
+  
+  // Delete confirmation modal
+  const [deleteModal, setDeleteModal] = useState({ isOpen: false, branch: null })
 
   // Filter states
   const [pageSize, setPageSize] = useState(5)
@@ -103,11 +107,20 @@ function Branch() {
     }
   }
 
-  // DELETE
-  const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this branch?')) return
+  // DELETE - Open confirmation modal
+  const openDeleteModal = (branch) => {
+    setDeleteModal({ isOpen: true, branch })
+  }
+
+  const closeDeleteModal = () => {
+    setDeleteModal({ isOpen: false, branch: null })
+  }
+
+  const confirmDelete = async () => {
+    if (!deleteModal.branch) return
     try {
-      await axios.delete(`${API}/delete_branch/${id}`)
+      await axios.delete(`${API}/delete_branch/${deleteModal.branch.id}`)
+      closeDeleteModal()
       fetchBranches()
     } catch (err) {
       console.error('Delete error:', err)
@@ -258,7 +271,7 @@ function Branch() {
                           <Edit2 className="w-4 h-4" />
                         </button>
                         <button
-                          onClick={() => handleDelete(branch.id)}
+                          onClick={() => openDeleteModal(branch)}
                           className="p-2 text-slate-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                           title="Delete"
                         >
@@ -406,6 +419,64 @@ function Branch() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteModal.isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={closeDeleteModal}
+          ></div>
+          <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 overflow-hidden">
+            {/* Modal Content */}
+            <div className="p-6 text-center">
+              {/* Warning Icon */}
+              <div className="mx-auto w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
+                <AlertTriangle className="w-8 h-8 text-red-600" />
+              </div>
+              
+              {/* Title */}
+              <h3 className="text-xl font-semibold text-slate-800 mb-2">
+                Delete Branch
+              </h3>
+              
+              {/* Description */}
+              <p className="text-slate-500 mb-2">
+                Are you sure you want to delete this branch?
+              </p>
+              
+              {/* Branch Name */}
+              <div className="bg-slate-100 rounded-lg px-4 py-3 mb-6">
+                <p className="text-sm text-slate-600">Branch Name</p>
+                <p className="font-semibold text-slate-800">
+                  {deleteModal.branch?.name}
+                </p>
+              </div>
+              
+              {/* Warning Text */}
+              <p className="text-sm text-red-500 mb-6">
+                This action cannot be undone. All data associated with this branch will be permanently removed.
+              </p>
+              
+              {/* Action Buttons */}
+              <div className="flex items-center justify-center gap-3">
+                <button
+                  onClick={closeDeleteModal}
+                  className="px-6 py-2.5 text-sm font-medium text-slate-600 bg-slate-100 rounded-lg hover:bg-slate-200 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmDelete}
+                  className="px-6 py-2.5 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
+                >
+                  Delete Branch
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
