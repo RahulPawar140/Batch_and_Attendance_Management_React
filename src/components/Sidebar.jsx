@@ -6,12 +6,14 @@ import {
   GraduationCap, 
   CalendarCheck, 
   FileText,
-  Settings
+  Settings,
+  BookOpen
 } from 'lucide-react'
 
 const navItems = [
   { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
   { name: 'Branch', path: '/branch', icon: Building2 },
+  { name: 'Courses', path: '/courses', icon: BookOpen },
   { name: 'Batches', path: '/batches', icon: Users },
   { name: 'Students', path: '/students', icon: GraduationCap },
   { name: 'Attendance', path: '/attendance', icon: CalendarCheck },
