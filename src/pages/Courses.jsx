@@ -213,14 +213,14 @@ function Courses() {
           <table className="w-full">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-200">
-                {['id', 'name', 'description'].map((col) => (
+                {['name', 'description'].map((col) => (
                   <th
                     key={col}
                     onClick={() => handleSort(col)}
                     className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider cursor-pointer hover:bg-slate-100 transition-colors"
                   >
                     <div className="flex items-center gap-2">
-                      {col === 'id' ? 'ID' : col.charAt(0).toUpperCase() + col.slice(1)}
+                      {col.charAt(0).toUpperCase() + col.slice(1)}
                       <ArrowUpDown className={`w-4 h-4 ${sortBy === col ? 'text-primary-600' : 'text-slate-400'}`} />
                     </div>
                   </th>
@@ -243,9 +243,6 @@ function Courses() {
               ) : courses.length > 0 ? (
                 courses.map((course) => (
                   <tr key={course.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-6 py-4 text-sm font-medium text-slate-800">
-                      #{course.id}
-                    </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center">

@@ -217,14 +217,14 @@ function Branch() {
           <table className="w-full">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-200">
-                {['id', 'name', 'location', 'landmark', 'remarks'].map((col) => (
+                {['name', 'location', 'landmark', 'remarks'].map((col) => (
                   <th
                     key={col}
                     onClick={() => handleSort(col)}
                     className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider cursor-pointer hover:bg-slate-100 transition-colors"
                   >
                     <div className="flex items-center gap-2">
-                      {col === 'id' ? 'ID' : col.charAt(0).toUpperCase() + col.slice(1)}
+                      {col.charAt(0).toUpperCase() + col.slice(1)}
                       <ArrowUpDown className={`w-4 h-4 ${sortBy === col ? 'text-primary-600' : 'text-slate-400'}`} />
                     </div>
                   </th>
@@ -237,7 +237,7 @@ function Branch() {
             <tbody className="divide-y divide-slate-100">
               {loading ? (
                 <tr>
-                  <td colSpan="6" className="px-6 py-12 text-center text-slate-500">
+                  <td colSpan="5" className="px-6 py-12 text-center text-slate-500">
                     <div className="flex items-center justify-center gap-2">
                       <div className="w-5 h-5 border-2 border-primary-600 border-t-transparent rounded-full animate-spin"></div>
                       Loading...
@@ -247,9 +247,6 @@ function Branch() {
               ) : branches.length > 0 ? (
                 branches.map((branch) => (
                   <tr key={branch.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-6 py-4 text-sm font-medium text-slate-800">
-                      #{branch.id}
-                    </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-primary-100 rounded-lg flex items-center justify-center">
@@ -283,7 +280,7 @@ function Branch() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan="6" className="px-6 py-12 text-center text-slate-500">
+                  <td colSpan="5" className="px-6 py-12 text-center text-slate-500">
                     No branches found. Add your first branch!
                   </td>
                 </tr>
