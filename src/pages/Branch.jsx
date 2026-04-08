@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react'
 import axios from 'axios'
-import { 
-  Plus, 
-  Search, 
-  Edit2, 
-  Trash2, 
-  ChevronLeft, 
+import {
+  Plus,
+  Search,
+  Edit2,
+  Trash2,
+  ChevronLeft,
   ChevronRight,
   X,
   Building2,
@@ -50,12 +50,7 @@ function Branch() {
       setBranches(Array.isArray(data) ? data : [])
     } catch (err) {
       console.error('Fetch error:', err)
-      // Demo data for preview
-      setBranches([
-        { id: 1, name: 'SITH Computer Institute', location: 'Bhandup West', landmark: 'Near Station', remarks: 'Main branch' },
-        { id: 2, name: 'Tech Academy', location: 'Mulund East', landmark: 'Highway Road', remarks: 'New branch' },
-        { id: 3, name: 'Digital Skills Center', location: 'Thane West', landmark: 'Mall Road', remarks: 'Training center' },
-      ])
+      setBranches([])
     } finally {
       setLoading(false)
     }
@@ -81,18 +76,8 @@ function Branch() {
       setEditId(data.id || id)
       setIsModalOpen(true)
     } catch (err) {
-      // Fallback for demo
-      const branch = branches.find(b => b.id === id)
-      if (branch) {
-        setForm({
-          name: branch.name || '',
-          location: branch.location || '',
-          landmark: branch.landmark || '',
-          remarks: branch.remarks || '',
-        })
-        setEditId(id)
-        setIsModalOpen(true)
-      }
+      console.error('Edit fetch error:', err)
+      alert('Failed to fetch branch details')
     }
   }
 
@@ -114,13 +99,7 @@ function Branch() {
       fetchBranches()
     } catch (err) {
       console.error('Submit error:', err)
-      // Demo mode: update local state
-      if (editId) {
-        setBranches(branches.map(b => b.id === editId ? { ...b, ...form } : b))
-      } else {
-        setBranches([...branches, { id: Date.now(), ...form }])
-      }
-      closeModal()
+      alert('Failed to save branch')
     }
   }
 
@@ -132,7 +111,7 @@ function Branch() {
       fetchBranches()
     } catch (err) {
       console.error('Delete error:', err)
-      setBranches(branches.filter(b => b.id !== id))
+      alert('Failed to delete branch')
     }
   }
 
@@ -332,7 +311,7 @@ function Branch() {
       {/* Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div 
+          <div
             className="absolute inset-0 bg-black/50 backdrop-blur-sm"
             onClick={closeModal}
           ></div>
