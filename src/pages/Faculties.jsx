@@ -123,26 +123,20 @@ function Faculties() {
 
   // Convert day-wise availability to API format
   const convertToApiFormat = (dayWiseAvailability) => {
-    const days = []
-    const timeRanges = []
+    const daySlots = {}
     
     Object.entries(dayWiseAvailability).forEach(([day, slots]) => {
-      if (slots.length > 0 && slots.some((slot) => slot.start && slot.end)) {
-        days.push(day)
-        // Add all valid time slots for this day
-        slots.forEach((slot) => {
-          if (slot.start && slot.end) {
-            timeRanges.push({ start: slot.start, end: slot.end })
-          }
-        })
+      const validSlots = slots.filter((slot) => slot.start && slot.end)
+      if (validSlots.length > 0) {
+        daySlots[day] = validSlots
       }
     })
     
-    return { days, timeRanges }
+    return daySlots
   }
 
   // Convert API format to day-wise availability
-  const convertFromApiFormat = (days, timeRanges) => {
+  const convertFromApiFormat = (apiData) => {
     const availability = {
       Monday: [],
       Tuesday: [],
@@ -153,34 +147,24 @@ function Faculties() {
       Sunday: [],
     }
     
-    // Parse if strings
-    let daysArray = days
-    let timeArray = timeRanges
-    
-    if (typeof days === 'string') {
+    // Parse if string
+    let daySlots = apiData
+    if (typeof apiData === 'string') {
       try {
-        daysArray = JSON.parse(days)
+        daySlots = JSON.parse(apiData)
       } catch {
-        daysArray = []
-      }
-    }
-    if (typeof timeRanges === 'string') {
-      try {
-        timeArray = JSON.parse(timeRanges)
-      } catch {
-        timeArray = []
+        daySlots = {}
       }
     }
     
-    if (!Array.isArray(daysArray) || !Array.isArray(timeArray)) {
+    if (!daySlots || typeof daySlots !== 'object') {
       return availability
     }
     
-    // Distribute time ranges across days (for now, apply same times to all days)
-    // This is a simple implementation - you may want to store day-specific times in DB
-    daysArray.forEach((day) => {
-      if (availability.hasOwnProperty(day)) {
-        availability[day] = timeArray.map((time) => ({ ...time }))
+    // Map each day's slots
+    Object.entries(daySlots).forEach(([day, slots]) => {
+      if (availability.hasOwnProperty(day) && Array.isArray(slots)) {
+        availability[day] = slots.map((slot) => ({ ...slot }))
       }
     })
     
@@ -194,10 +178,7 @@ function Faculties() {
       let data = res.data.data || res.data
       if (Array.isArray(data)) data = data[0]
 
-      const availability = convertFromApiFormat(
-        data.availability_of_days,
-        data.availability_of_time_in_range
-      )
+      const availability = convertFromApiFormat(data.availability_of_time_in_range)
 
       setForm({
         first_name: data.first_name || '',
@@ -255,15 +236,15 @@ function Faculties() {
     if (!validateForm()) return
 
     try {
-      const { days, timeRanges } = convertToApiFormat(form.availability)
+      const daySlots = convertToApiFormat(form.availability)
 
       const payload = {
         first_name: form.first_name,
         last_name: form.last_name,
         mobile: form.mobile,
         email: form.email,
-        availability_of_days: days,
-        availability_of_time_in_range: timeRanges,
+        availability_of_days: Object.keys(daySlots),
+        availability_of_time_in_range: daySlots,
         remarks: form.remarks,
       }
 
@@ -363,29 +344,26 @@ function Faculties() {
   }
 
   // Format availability for display
-  const formatAvailability = (days, timeRanges) => {
-    let daysArray = days
-    let timeArray = timeRanges
+  const formatAvailability = (timeRanges) => {
+    let daySlots = timeRanges
 
-    if (typeof days === 'string') {
-      try {
-        daysArray = JSON.parse(days)
-      } catch {
-        daysArray = []
-      }
-    }
     if (typeof timeRanges === 'string') {
       try {
-        timeArray = JSON.parse(timeRanges)
+        daySlots = JSON.parse(timeRanges)
       } catch {
-        timeArray = []
+        daySlots = {}
       }
     }
 
-    return {
-      days: Array.isArray(daysArray) ? daysArray : [],
-      times: Array.isArray(timeArray) ? timeArray : [],
+    if (!daySlots || typeof daySlots !== 'object') {
+      return []
     }
+
+    // Convert to array of day-wise slots for display
+    return Object.entries(daySlots).map(([day, slots]) => ({
+      day,
+      slots: Array.isArray(slots) ? slots : []
+    }))
   }
 
   return (
@@ -498,10 +476,7 @@ function Faculties() {
                 </tr>
               ) : faculties.length > 0 ? (
                 faculties.map((faculty) => {
-                  const availability = formatAvailability(
-                    faculty.availability_of_days,
-                    faculty.availability_of_time_in_range
-                  )
+                  const availability = formatAvailability(faculty.availability_of_time_in_range)
                   return (
                     <tr key={faculty.id} className="hover:bg-slate-50 transition-colors">
                       <td className="px-6 py-4">
@@ -531,35 +506,32 @@ function Faculties() {
                       </td>
                       <td className="px-6 py-4">
                         <div className="space-y-2">
-                          {availability.days.length > 0 && (
-                            <div className="flex items-start gap-2">
-                              <Calendar className="w-4 h-4 text-slate-400 mt-0.5" />
-                              <div className="flex flex-wrap gap-1">
-                                {availability.days.map((day) => (
-                                  <span
-                                    key={day}
-                                    className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full"
-                                  >
+                          {availability.length > 0 ? (
+                            availability.map(({ day, slots }) => (
+                              <div key={day} className="space-y-1">
+                                <div className="flex items-start gap-2">
+                                  <Calendar className="w-4 h-4 text-slate-400 mt-0.5" />
+                                  <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full font-medium">
                                     {day.slice(0, 3)}
                                   </span>
-                                ))}
+                                </div>
+                                <div className="flex items-start gap-2 pl-6">
+                                  <Clock className="w-4 h-4 text-slate-400 mt-0.5" />
+                                  <div className="flex flex-wrap gap-1">
+                                    {slots.map((slot, idx) => (
+                                      <span
+                                        key={idx}
+                                        className="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full"
+                                      >
+                                        {convertTo12HourFormat(slot.start)} - {convertTo12HourFormat(slot.end)}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
                               </div>
-                            </div>
-                          )}
-                          {availability.times.length > 0 && (
-                            <div className="flex items-start gap-2">
-                              <Clock className="w-4 h-4 text-slate-400 mt-0.5" />
-                              <div className="flex flex-wrap gap-1">
-                                {availability.times.map((time, idx) => (
-                                  <span
-                                    key={idx}
-                                    className="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full"
-                                  >
-                                    {convertTo12HourFormat(time.start)} - {convertTo12HourFormat(time.end)}
-                                  </span>
-                                ))}
-                              </div>
-                            </div>
+                            ))
+                          ) : (
+                            <span className="text-sm text-slate-400">No availability set</span>
                           )}
                         </div>
                       </td>
