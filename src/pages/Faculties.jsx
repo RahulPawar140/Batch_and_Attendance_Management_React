@@ -51,7 +51,6 @@ function Faculties() {
       Saturday: [],
       Sunday: [],
     },
-    remarks: '',
   })
   const [editId, setEditId] = useState(null)
   const [formErrors, setFormErrors] = useState({})
@@ -121,28 +120,46 @@ function Faculties() {
     return Object.keys(errors).length === 0
   }
 
-  // Convert day-wise availability to API format
-  const convertToApiFormat = (dayWiseAvailability) => {
-    const days = []
-    const timeRanges = []
-    
-    Object.entries(dayWiseAvailability).forEach(([day, slots]) => {
-      if (slots.length > 0 && slots.some((slot) => slot.start && slot.end)) {
-        days.push(day)
-        // Add all valid time slots for this day
-        slots.forEach((slot) => {
-          if (slot.start && slot.end) {
-            timeRanges.push({ start: slot.start, end: slot.end })
-          }
-        })
-      }
-    })
-    
-    return { days, timeRanges }
+  // Convert 24-hour time to 12-hour AM/PM format for API
+  const convertTo12HourFormatApi = (time24) => {
+    if (!time24) return ''
+    const [hours, minutes] = time24.split(':')
+    let hour = parseInt(hours, 10)
+    const minute = minutes || '00'
+    const ampm = hour >= 12 ? 'PM' : 'AM'
+    if (hour > 12) hour -= 12
+    if (hour === 0) hour = 12
+    return `${hour.toString().padStart(2, '0')}:${minute} ${ampm}`
   }
 
-  // Convert API format to day-wise availability
-  const convertFromApiFormat = (days, timeRanges) => {
+  // Convert 12-hour AM/PM format to 24-hour time for input
+  const convertTo24HourFormat = (time12) => {
+    if (!time12) return ''
+    const match = time12.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i)
+    if (!match) return time12
+    let [, hours, minutes, period] = match
+    let hour = parseInt(hours, 10)
+    if (period.toUpperCase() === 'PM' && hour !== 12) hour += 12
+    if (period.toUpperCase() === 'AM' && hour === 12) hour = 0
+    return `${hour.toString().padStart(2, '0')}:${minutes}`
+  }
+
+  // Convert day-wise availability to API format (availability_schedule)
+  const convertToApiFormat = (dayWiseAvailability) => {
+    return DAYS_OF_WEEK.map((day) => {
+      const slots = dayWiseAvailability[day] || []
+      const validSlots = slots
+        .filter((slot) => slot.start && slot.end)
+        .map((slot) => ({
+          start: convertTo12HourFormatApi(slot.start),
+          end: convertTo12HourFormatApi(slot.end),
+        }))
+      return { day, slots: validSlots }
+    })
+  }
+
+  // Convert API format (availability_schedule) to day-wise availability
+  const convertFromApiFormat = (availabilitySchedule) => {
     const availability = {
       Monday: [],
       Tuesday: [],
@@ -152,38 +169,31 @@ function Faculties() {
       Saturday: [],
       Sunday: [],
     }
-    
-    // Parse if strings
-    let daysArray = days
-    let timeArray = timeRanges
-    
-    if (typeof days === 'string') {
+
+    // Parse if string
+    let schedule = availabilitySchedule
+    if (typeof availabilitySchedule === 'string') {
       try {
-        daysArray = JSON.parse(days)
+        schedule = JSON.parse(availabilitySchedule)
       } catch {
-        daysArray = []
+        schedule = []
       }
     }
-    if (typeof timeRanges === 'string') {
-      try {
-        timeArray = JSON.parse(timeRanges)
-      } catch {
-        timeArray = []
-      }
-    }
-    
-    if (!Array.isArray(daysArray) || !Array.isArray(timeArray)) {
+
+    if (!Array.isArray(schedule)) {
       return availability
     }
-    
-    // Distribute time ranges across days (for now, apply same times to all days)
-    // This is a simple implementation - you may want to store day-specific times in DB
-    daysArray.forEach((day) => {
-      if (availability.hasOwnProperty(day)) {
-        availability[day] = timeArray.map((time) => ({ ...time }))
+
+    schedule.forEach((dayEntry) => {
+      if (dayEntry.day && availability.hasOwnProperty(dayEntry.day)) {
+        const slots = Array.isArray(dayEntry.slots) ? dayEntry.slots : []
+        availability[dayEntry.day] = slots.map((slot) => ({
+          start: convertTo24HourFormat(slot.start),
+          end: convertTo24HourFormat(slot.end),
+        }))
       }
     })
-    
+
     return availability
   }
 
@@ -194,10 +204,7 @@ function Faculties() {
       let data = res.data.data || res.data
       if (Array.isArray(data)) data = data[0]
 
-      const availability = convertFromApiFormat(
-        data.availability_of_days,
-        data.availability_of_time_in_range
-      )
+      const availability = convertFromApiFormat(data.availability_schedule)
 
       setForm({
         first_name: data.first_name || '',
@@ -205,7 +212,6 @@ function Faculties() {
         mobile: data.mobile || '',
         email: data.email || '',
         availability,
-        remarks: data.remarks || '',
       })
       setEditId(data.id || id)
       setFormErrors({})
@@ -255,16 +261,14 @@ function Faculties() {
     if (!validateForm()) return
 
     try {
-      const { days, timeRanges } = convertToApiFormat(form.availability)
+      const availability_schedule = convertToApiFormat(form.availability)
 
       const payload = {
         first_name: form.first_name,
         last_name: form.last_name,
         mobile: form.mobile,
         email: form.email,
-        availability_of_days: days,
-        availability_of_time_in_range: timeRanges,
-        remarks: form.remarks,
+        availability_schedule,
       }
 
       if (editId) {
@@ -333,7 +337,6 @@ function Faculties() {
         Saturday: [],
         Sunday: [],
       },
-      remarks: '',
     })
     setEditId(null)
     setFormErrors({})
@@ -356,49 +359,41 @@ function Faculties() {
         Saturday: [],
         Sunday: [],
       },
-      remarks: '',
     })
     setEditId(null)
     setFormErrors({})
   }
 
-  // Format availability for display
-  const formatAvailability = (days, timeRanges) => {
-    let daysArray = days
-    let timeArray = timeRanges
-
-    if (typeof days === 'string') {
+  // Format availability_schedule for display
+  const formatAvailability = (availabilitySchedule) => {
+    let schedule = availabilitySchedule
+    if (typeof availabilitySchedule === 'string') {
       try {
-        daysArray = JSON.parse(days)
+        schedule = JSON.parse(availabilitySchedule)
       } catch {
-        daysArray = []
-      }
-    }
-    if (typeof timeRanges === 'string') {
-      try {
-        timeArray = JSON.parse(timeRanges)
-      } catch {
-        timeArray = []
+        schedule = []
       }
     }
 
-    return {
-      days: Array.isArray(daysArray) ? daysArray : [],
-      times: Array.isArray(timeArray) ? timeArray : [],
+    if (!Array.isArray(schedule)) {
+      return []
     }
+
+    // Return only days that have slots
+    return schedule.filter((entry) => entry.slots && entry.slots.length > 0)
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 min-w-0">
       {/* Page Header */}
-      <div className="flex items-center justify-between">
-        <div>
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="min-w-0">
           <h1 className="text-2xl font-bold text-slate-800">Faculty Management</h1>
           <p className="text-slate-500 mt-1">Manage your institute faculties</p>
         </div>
         <button
           onClick={openCreateModal}
-          className="flex items-center gap-2 px-4 py-2.5 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors shadow-sm"
+          className="flex items-center gap-2 px-4 py-2.5 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors shadow-sm shrink-0"
         >
           <Plus className="w-5 h-5" />
           <span className="font-medium">Add Faculty</span>
@@ -430,6 +425,7 @@ function Faculties() {
             <option value={5}>5 per page</option>
             <option value={10}>10 per page</option>
             <option value={25}>25 per page</option>
+            <option value={50}>50 per page</option>
           </select>
 
           {/* Search Button */}
@@ -445,7 +441,7 @@ function Faculties() {
       {/* Table Card */}
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full min-w-[800px]">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-200">
                 <th
@@ -478,9 +474,6 @@ function Faculties() {
                 <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
                   Availability
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                  Remarks
-                </th>
                 <th className="px-6 py-4 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">
                   Actions
                 </th>
@@ -489,7 +482,7 @@ function Faculties() {
             <tbody className="divide-y divide-slate-100">
               {loading ? (
                 <tr>
-                  <td colSpan="6" className="px-6 py-12 text-center text-slate-500">
+                  <td colSpan="5" className="px-6 py-12 text-center text-slate-500">
                     <div className="flex items-center justify-center gap-2">
                       <div className="w-5 h-5 border-2 border-primary-600 border-t-transparent rounded-full animate-spin"></div>
                       Loading...
@@ -498,10 +491,7 @@ function Faculties() {
                 </tr>
               ) : faculties.length > 0 ? (
                 faculties.map((faculty) => {
-                  const availability = formatAvailability(
-                    faculty.availability_of_days,
-                    faculty.availability_of_time_in_range
-                  )
+                  const availability = formatAvailability(faculty.availability_schedule)
                   return (
                     <tr key={faculty.id} className="hover:bg-slate-50 transition-colors">
                       <td className="px-6 py-4">
@@ -530,41 +520,29 @@ function Faculties() {
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="space-y-2">
-                          {availability.days.length > 0 && (
-                            <div className="flex items-start gap-2">
-                              <Calendar className="w-4 h-4 text-slate-400 mt-0.5" />
-                              <div className="flex flex-wrap gap-1">
-                                {availability.days.map((day) => (
-                                  <span
-                                    key={day}
-                                    className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full"
-                                  >
-                                    {day.slice(0, 3)}
-                                  </span>
-                                ))}
+                        <div className="space-y-1.5">
+                          {availability.length > 0 ? (
+                            availability.map((dayEntry) => (
+                              <div key={dayEntry.day} className="flex items-start gap-2">
+                                <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full min-w-[40px] text-center">
+                                  {dayEntry.day.slice(0, 3)}
+                                </span>
+                                <div className="flex flex-wrap gap-1">
+                                  {dayEntry.slots.map((slot, idx) => (
+                                    <span
+                                      key={idx}
+                                      className="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full"
+                                    >
+                                      {slot.start} - {slot.end}
+                                    </span>
+                                  ))}
+                                </div>
                               </div>
-                            </div>
-                          )}
-                          {availability.times.length > 0 && (
-                            <div className="flex items-start gap-2">
-                              <Clock className="w-4 h-4 text-slate-400 mt-0.5" />
-                              <div className="flex flex-wrap gap-1">
-                                {availability.times.map((time, idx) => (
-                                  <span
-                                    key={idx}
-                                    className="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full"
-                                  >
-                                    {convertTo12HourFormat(time.start)} - {convertTo12HourFormat(time.end)}
-                                  </span>
-                                ))}
-                              </div>
-                            </div>
+                            ))
+                          ) : (
+                            <span className="text-xs text-slate-400">No availability set</span>
                           )}
                         </div>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-slate-500 max-w-xs truncate">
-                        {faculty.remarks || '-'}
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center justify-end gap-2">
@@ -589,7 +567,7 @@ function Faculties() {
                 })
               ) : (
                 <tr>
-                  <td colSpan="6" className="px-6 py-12 text-center text-slate-500">
+                  <td colSpan="5" className="px-6 py-12 text-center text-slate-500">
                     No faculties found. Add your first faculty!
                   </td>
                 </tr>
@@ -804,20 +782,6 @@ function Faculties() {
                 {formErrors.availability && (
                   <p className="mt-1 text-xs text-red-500">{formErrors.availability}</p>
                 )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                  Remarks
-                </label>
-                <textarea
-                  name="remarks"
-                  value={form.remarks}
-                  onChange={handleChange}
-                  rows={3}
-                  placeholder="Enter any remarks"
-                  className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 resize-none"
-                />
               </div>
 
               {/* Modal Footer */}

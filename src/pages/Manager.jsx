@@ -116,10 +116,17 @@ function Manager() {
       let data = res.data.data || res.data
       if (Array.isArray(data)) data = data[0]
 
+      console.log('[v0] Edit manager data:', data)
+      console.log('[v0] branch_id from API:', data.branch_id, 'type:', typeof data.branch_id)
+      console.log('[v0] Available branches:', branches.map(b => ({ id: b.id, type: typeof b.id })))
+
+      const branchIdStr = data.branch_id !== undefined && data.branch_id !== null ? String(data.branch_id) : ''
+      console.log('[v0] Setting branch_id to:', branchIdStr)
+
       setForm({
         first_name: data.first_name || '',
         last_name: data.last_name || '',
-        branch_id: data.branch_id || '',
+        branch_id: branchIdStr,
         mobile: data.mobile || '',
         email: data.email || '',
         remarks: data.remarks || '',
@@ -244,16 +251,16 @@ function Manager() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 min-w-0">
       {/* Page Header */}
-      <div className="flex items-center justify-between">
-        <div>
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="min-w-0">
           <h1 className="text-2xl font-bold text-slate-800">Manager Management</h1>
           <p className="text-slate-500 mt-1">Manage your institute managers</p>
         </div>
         <button
           onClick={openCreateModal}
-          className="flex items-center gap-2 px-4 py-2.5 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors shadow-sm"
+          className="flex items-center gap-2 px-4 py-2.5 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors shadow-sm shrink-0"
         >
           <Plus className="w-5 h-5" />
           <span className="font-medium">Add Manager</span>
@@ -285,6 +292,7 @@ function Manager() {
             <option value={5}>5 per page</option>
             <option value={10}>10 per page</option>
             <option value={25}>25 per page</option>
+            <option value={50}>50 per page</option>
           </select>
 
           {/* Search Button */}
@@ -300,7 +308,7 @@ function Manager() {
       {/* Table Card */}
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full min-w-[800px]">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-200">
                 <th
@@ -534,11 +542,16 @@ function Manager() {
                     } rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent`}
                   >
                     <option value="">Select Branch</option>
-                    {branches.map((branch) => (
-                      <option key={branch.id} value={branch.id}>
-                        {branch.branch_with_location || `${branch.name} - ${branch.location}`}
-                      </option>
-                    ))}
+                    {branches.map((branch) => {
+                      const branchValue = String(branch.id)
+                      const isSelected = form.branch_id === branchValue
+                      console.log('[v0] Branch option:', branchValue, 'form.branch_id:', form.branch_id, 'match:', isSelected)
+                      return (
+                        <option key={branch.id} value={branchValue}>
+                          {branch.branch_with_location || `${branch.name} - ${branch.location}`}
+                        </option>
+                      )
+                    })}
                   </select>
                   {formErrors.branch_id && (
                     <p className="mt-1 text-xs text-red-600">{formErrors.branch_id}</p>
