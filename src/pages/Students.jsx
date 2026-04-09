@@ -107,7 +107,7 @@ function Students() {
         mobile: data.mobile || '',
         alternate_mobile: data.alternate_mobile || '',
         dob: data.dob ? data.dob.split('T')[0] : '',
-        email: data.email || '',
+        email: data.email || data.email_address || '',
         remarks: data.remarks || '',
       })
       setEditId(data.id || id)
@@ -278,6 +278,7 @@ function Students() {
             <option value={5}>5 per page</option>
             <option value={10}>10 per page</option>
             <option value={25}>25 per page</option>
+            <option value={50}>50 per page</option>
           </select>
 
           {/* Search Button */}
@@ -293,7 +294,7 @@ function Students() {
       {/* Table Card */}
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full min-w-[900px]">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-200">
                 <th

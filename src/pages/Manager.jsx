@@ -119,7 +119,7 @@ function Manager() {
       setForm({
         first_name: data.first_name || '',
         last_name: data.last_name || '',
-        branch_id: data.branch_id || '',
+        branch_id: data.branch_id ? String(data.branch_id) : '',
         mobile: data.mobile || '',
         email: data.email || '',
         remarks: data.remarks || '',
@@ -285,6 +285,7 @@ function Manager() {
             <option value={5}>5 per page</option>
             <option value={10}>10 per page</option>
             <option value={25}>25 per page</option>
+            <option value={50}>50 per page</option>
           </select>
 
           {/* Search Button */}
@@ -300,7 +301,7 @@ function Manager() {
       {/* Table Card */}
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full min-w-[800px]">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-200">
                 <th
