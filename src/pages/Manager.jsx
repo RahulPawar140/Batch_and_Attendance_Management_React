@@ -104,6 +104,7 @@ function Manager() {
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
       errors.email = 'Enter a valid email address'
     }
+    
     setFormErrors(errors)
     return Object.keys(errors).length === 0
   }
@@ -149,9 +150,14 @@ function Manager() {
 
     try {
       const payload = {
-        ...form,
+        first_name: form.first_name,
+        last_name: form.last_name,
         branch_id: Number(form.branch_id),
+        mobile: form.mobile,
+        email: form.email,
+        remarks: form.remarks,
       }
+      
       if (editId) {
         await axios.put(`${API}/update_manager`, { id: editId, ...payload })
       } else {
@@ -311,8 +317,17 @@ function Manager() {
                   className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider cursor-pointer hover:bg-slate-100 transition-colors"
                 >
                   <div className="flex items-center gap-2">
-                    Contact
+                    Email
                     <ArrowUpDown className={`w-4 h-4 ${sortBy === 'email' ? 'text-primary-600' : 'text-slate-400'}`} />
+                  </div>
+                </th>
+                <th
+                  onClick={() => handleSort('mobile')}
+                  className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider cursor-pointer hover:bg-slate-100 transition-colors"
+                >
+                  <div className="flex items-center gap-2">
+                    Contact
+                    <ArrowUpDown className={`w-4 h-4 ${sortBy === 'mobile' ? 'text-primary-600' : 'text-slate-400'}`} />
                   </div>
                 </th>
                 <th
@@ -335,7 +350,7 @@ function Manager() {
             <tbody className="divide-y divide-slate-100">
               {loading ? (
                 <tr>
-                  <td colSpan="5" className="px-6 py-12 text-center text-slate-500">
+                  <td colSpan="6" className="px-6 py-12 text-center text-slate-500">
                     <div className="flex items-center justify-center gap-2">
                       <div className="w-5 h-5 border-2 border-primary-600 border-t-transparent rounded-full animate-spin"></div>
                       Loading...
@@ -359,15 +374,15 @@ function Manager() {
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2 text-sm text-slate-600">
-                          <Mail className="w-4 h-4 text-slate-400" />
-                          {manager.email}
-                        </div>
-                        <div className="flex items-center gap-2 text-sm text-slate-600">
-                          <Phone className="w-4 h-4 text-slate-400" />
-                          {manager.mobile}
-                        </div>
+                      <div className="flex items-center gap-2 text-sm text-slate-600">
+                        <Mail className="w-4 h-4 text-slate-400" />
+                        {manager.email}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-2 text-sm text-slate-600">
+                        <Phone className="w-4 h-4 text-slate-400" />
+                        {manager.mobile}
                       </div>
                     </td>
                     <td className="px-6 py-4">
@@ -403,7 +418,7 @@ function Manager() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan="5" className="px-6 py-12 text-center text-slate-500">
+                  <td colSpan="6" className="px-6 py-12 text-center text-slate-500">
                     No managers found. Add your first manager!
                   </td>
                 </tr>
@@ -441,162 +456,168 @@ function Manager() {
         </div>
       </div>
 
-      {/* Modal */}
+      {/* Create/Edit Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div
-            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-            onClick={closeModal}
-          ></div>
-          <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 overflow-hidden max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             {/* Modal Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 sticky top-0 bg-white">
-              <h2 className="text-lg font-semibold text-slate-800">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 sticky top-0 bg-white rounded-t-2xl">
+              <h2 className="text-xl font-bold text-slate-800">
                 {editId ? 'Edit Manager' : 'Add New Manager'}
               </h2>
               <button
                 onClick={closeModal}
-                className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+                className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
               >
-                <X className="w-5 h-5" />
+                <X className="w-5 h-5 text-slate-500" />
               </button>
             </div>
 
-            {/* Modal Form */}
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+            {/* Modal Body */}
+            <form onSubmit={handleSubmit} className="p-6 space-y-5">
+              {/* Personal Information */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold text-slate-700 uppercase tracking-wide">
+                  Personal Information
+                </h3>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                      First Name <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      name="first_name"
+                      value={form.first_name}
+                      onChange={handleChange}
+                      className={`w-full px-4 py-2.5 border ${
+                        formErrors.first_name ? 'border-red-300' : 'border-slate-300'
+                      } rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent`}
+                      placeholder="Enter first name"
+                    />
+                    {formErrors.first_name && (
+                      <p className="mt-1 text-xs text-red-600">{formErrors.first_name}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                      Last Name <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      name="last_name"
+                      value={form.last_name}
+                      onChange={handleChange}
+                      className={`w-full px-4 py-2.5 border ${
+                        formErrors.last_name ? 'border-red-300' : 'border-slate-300'
+                      } rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent`}
+                      placeholder="Enter last name"
+                    />
+                    {formErrors.last_name && (
+                      <p className="mt-1 text-xs text-red-600">{formErrors.last_name}</p>
+                    )}
+                  </div>
+                </div>
+
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                    First Name <span className="text-red-500">*</span>
+                    Branch <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    name="branch_id"
+                    value={form.branch_id}
+                    onChange={handleChange}
+                    className={`w-full px-4 py-2.5 border ${
+                      formErrors.branch_id ? 'border-red-300' : 'border-slate-300'
+                    } rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent`}
+                  >
+                    <option value="">Select Branch</option>
+                    {branches.map((branch) => (
+                      <option key={branch.id} value={branch.id}>
+                        {branch.branch_with_location || `${branch.name} - ${branch.location}`}
+                      </option>
+                    ))}
+                  </select>
+                  {formErrors.branch_id && (
+                    <p className="mt-1 text-xs text-red-600">{formErrors.branch_id}</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Contact Information */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold text-slate-700 uppercase tracking-wide">
+                  Contact Information
+                </h3>
+                
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                    Mobile <span className="text-red-500">*</span>
                   </label>
                   <input
-                    type="text"
-                    name="first_name"
-                    value={form.first_name}
+                    type="tel"
+                    name="mobile"
+                    value={form.mobile}
                     onChange={handleChange}
-                    placeholder="Enter first name"
-                    className={`w-full px-4 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-1 ${
-                      formErrors.first_name
-                        ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
-                        : 'border-slate-200 focus:border-primary-500 focus:ring-primary-500'
-                    }`}
+                    className={`w-full px-4 py-2.5 border ${
+                      formErrors.mobile ? 'border-red-300' : 'border-slate-300'
+                    } rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent`}
+                    placeholder="Enter 10-digit mobile number"
                   />
-                  {formErrors.first_name && (
-                    <p className="mt-1 text-xs text-red-500">{formErrors.first_name}</p>
+                  {formErrors.mobile && (
+                    <p className="mt-1 text-xs text-red-600">{formErrors.mobile}</p>
                   )}
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                    Last Name <span className="text-red-500">*</span>
+                    Email <span className="text-red-500">*</span>
                   </label>
                   <input
-                    type="text"
-                    name="last_name"
-                    value={form.last_name}
+                    type="email"
+                    name="email"
+                    value={form.email}
                     onChange={handleChange}
-                    placeholder="Enter last name"
-                    className={`w-full px-4 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-1 ${
-                      formErrors.last_name
-                        ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
-                        : 'border-slate-200 focus:border-primary-500 focus:ring-primary-500'
-                    }`}
+                    className={`w-full px-4 py-2.5 border ${
+                      formErrors.email ? 'border-red-300' : 'border-slate-300'
+                    } rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent`}
+                    placeholder="Enter email address"
                   />
-                  {formErrors.last_name && (
-                    <p className="mt-1 text-xs text-red-500">{formErrors.last_name}</p>
+                  {formErrors.email && (
+                    <p className="mt-1 text-xs text-red-600">{formErrors.email}</p>
                   )}
                 </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                  Branch <span className="text-red-500">*</span>
-                </label>
-                <select
-                  name="branch_id"
-                  value={form.branch_id}
-                  onChange={handleChange}
-                  className={`w-full px-4 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-1 ${
-                    formErrors.branch_id
-                      ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
-                      : 'border-slate-200 focus:border-primary-500 focus:ring-primary-500'
-                  }`}
-                >
-                  <option value="">Select a branch</option>
-                  {branches.map((branch) => (
-                    <option key={branch.id} value={branch.id}>
-                      {branch.name}
-                    </option>
-                  ))}
-                </select>
-                {formErrors.branch_id && (
-                  <p className="mt-1 text-xs text-red-500">{formErrors.branch_id}</p>
-                )}
+              {/* Additional Information */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold text-slate-700 uppercase tracking-wide">
+                  Additional Information
+                </h3>
+                
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                    Remarks
+                  </label>
+                  <textarea
+                    name="remarks"
+                    value={form.remarks}
+                    onChange={handleChange}
+                    rows={3}
+                    className="w-full px-4 py-2.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
+                    placeholder="Enter any additional remarks..."
+                  />
+                </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                  Mobile Number <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="tel"
-                  name="mobile"
-                  value={form.mobile}
-                  onChange={handleChange}
-                  placeholder="Enter 10-digit mobile number"
-                  maxLength={10}
-                  className={`w-full px-4 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-1 ${
-                    formErrors.mobile
-                      ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
-                      : 'border-slate-200 focus:border-primary-500 focus:ring-primary-500'
-                  }`}
-                />
-                {formErrors.mobile && (
-                  <p className="mt-1 text-xs text-red-500">{formErrors.mobile}</p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                  Email <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="email"
-                  name="email"
-                  value={form.email}
-                  onChange={handleChange}
-                  placeholder="Enter email address"
-                  className={`w-full px-4 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-1 ${
-                    formErrors.email
-                      ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
-                      : 'border-slate-200 focus:border-primary-500 focus:ring-primary-500'
-                  }`}
-                />
-                {formErrors.email && (
-                  <p className="mt-1 text-xs text-red-500">{formErrors.email}</p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                  Remarks
-                </label>
-                <textarea
-                  name="remarks"
-                  value={form.remarks}
-                  onChange={handleChange}
-                  rows={3}
-                  placeholder="Enter any remarks"
-                  className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 resize-none"
-                />
-              </div>
-
-              {/* Modal Footer */}
-              <div className="flex items-center justify-end gap-3 pt-4">
+              {/* Form Actions */}
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-200">
                 <button
                   type="button"
                   onClick={closeModal}
-                  className="px-4 py-2.5 text-sm font-medium text-slate-600 bg-slate-100 rounded-lg hover:bg-slate-200 transition-colors"
+                  className="px-4 py-2.5 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors"
                 >
                   Cancel
                 </button>
@@ -614,55 +635,34 @@ function Manager() {
 
       {/* Delete Confirmation Modal */}
       {deleteModal.isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div
-            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-            onClick={closeDeleteModal}
-          ></div>
-          <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 overflow-hidden">
-            {/* Modal Content */}
-            <div className="p-6 text-center">
-              {/* Warning Icon */}
-              <div className="mx-auto w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
-                <AlertTriangle className="w-8 h-8 text-red-600" />
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+            <div className="p-6">
+              <div className="flex items-center justify-center w-12 h-12 bg-red-100 rounded-full mx-auto mb-4">
+                <AlertTriangle className="w-6 h-6 text-red-600" />
               </div>
-
-              {/* Title */}
-              <h3 className="text-xl font-semibold text-slate-800 mb-2">
+              <h3 className="text-lg font-bold text-slate-800 text-center mb-2">
                 Delete Manager
               </h3>
-
-              {/* Description */}
-              <p className="text-slate-500 mb-2">
-                Are you sure you want to delete this manager?
-              </p>
-
-              {/* Manager Name */}
-              <div className="bg-slate-100 rounded-lg px-4 py-3 mb-6">
-                <p className="text-sm text-slate-600">Manager Name</p>
-                <p className="font-semibold text-slate-800">
+              <p className="text-slate-600 text-center mb-6">
+                Are you sure you want to delete{' '}
+                <span className="font-semibold">
                   {deleteModal.manager?.first_name} {deleteModal.manager?.last_name}
-                </p>
-              </div>
-
-              {/* Warning Text */}
-              <p className="text-sm text-red-500 mb-6">
-                This action cannot be undone. All data associated with this manager will be permanently removed.
+                </span>
+                ? This action cannot be undone.
               </p>
-
-              {/* Action Buttons */}
-              <div className="flex items-center justify-center gap-3">
+              <div className="flex items-center gap-3">
                 <button
                   onClick={closeDeleteModal}
-                  className="px-6 py-2.5 text-sm font-medium text-slate-600 bg-slate-100 rounded-lg hover:bg-slate-200 transition-colors"
+                  className="flex-1 px-4 py-2.5 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={confirmDelete}
-                  className="px-6 py-2.5 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
+                  className="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
                 >
-                  Delete Manager
+                  Delete
                 </button>
               </div>
             </div>
