@@ -1,0 +1,689 @@
+import { useEffect, useState } from 'react'
+import axios from 'axios'
+import {
+  Plus,
+  Search,
+  Edit2,
+  Trash2,
+  ChevronLeft,
+  ChevronRight,
+  X,
+  UserCog,
+  ArrowUpDown,
+  AlertTriangle,
+  Phone,
+  Mail,
+  Building2
+} from 'lucide-react'
+
+const API = 'http://localhost:9998/manager'
+const BRANCH_API = 'http://localhost:9998/branch'
+
+function Manager() {
+  const [managers, setManagers] = useState([])
+  const [branches, setBranches] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [form, setForm] = useState({
+    first_name: '',
+    last_name: '',
+    branch_id: '',
+    mobile: '',
+    email: '',
+    remarks: '',
+  })
+  const [editId, setEditId] = useState(null)
+  const [formErrors, setFormErrors] = useState({})
+
+  // Delete confirmation modal
+  const [deleteModal, setDeleteModal] = useState({ isOpen: false, manager: null })
+
+  // Filter states
+  const [pageSize, setPageSize] = useState(5)
+  const [pageIndex, setPageIndex] = useState(1)
+  const [sortBy, setSortBy] = useState('id')
+  const [sortOrder, setSortOrder] = useState('ASC')
+  const [searchText, setSearchText] = useState('')
+
+  // Fetch branches for dropdown
+  const fetchBranches = async () => {
+    try {
+      const res = await axios.get(`${BRANCH_API}/get_branch_list`)
+      const data = res.data.data || res.data
+      setBranches(Array.isArray(data) ? data : [])
+    } catch (err) {
+      console.error('Fetch branches error:', err)
+      setBranches([])
+    }
+  }
+
+  // GET ALL MANAGERS
+  const fetchManagers = async () => {
+    setLoading(true)
+    try {
+      const res = await axios.get(`${API}/get_manager_list`, {
+        params: {
+          page_size: pageSize,
+          page_index: pageIndex,
+          sort_by: sortBy,
+          sort_order: sortOrder,
+          search_text: searchText,
+        },
+      })
+      const data = res.data.data || res.data
+      setManagers(Array.isArray(data) ? data : [])
+    } catch (err) {
+      console.error('Fetch error:', err)
+      setManagers([])
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchBranches()
+  }, [])
+
+  useEffect(() => {
+    fetchManagers()
+  }, [pageIndex, pageSize, sortBy, sortOrder])
+
+  // Validate form
+  const validateForm = () => {
+    const errors = {}
+    if (!form.first_name.trim()) errors.first_name = 'First name is required'
+    if (!form.last_name.trim()) errors.last_name = 'Last name is required'
+    if (!form.branch_id) errors.branch_id = 'Branch is required'
+    if (!form.mobile.trim()) {
+      errors.mobile = 'Mobile number is required'
+    } else if (!/^[0-9]{10}$/.test(form.mobile)) {
+      errors.mobile = 'Enter a valid 10-digit mobile number'
+    }
+    if (!form.email.trim()) {
+      errors.email = 'Email is required'
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
+      errors.email = 'Enter a valid email address'
+    }
+    
+    setFormErrors(errors)
+    return Object.keys(errors).length === 0
+  }
+
+  // GET SINGLE MANAGER (for edit)
+  const handleEdit = async (id) => {
+    try {
+      const res = await axios.get(`${API}/get_manager/${id}`)
+      let data = res.data.data || res.data
+      if (Array.isArray(data)) data = data[0]
+
+      console.log('[v0] Edit manager data:', data)
+      console.log('[v0] branch_id from API:', data.branch_id, 'type:', typeof data.branch_id)
+      console.log('[v0] Available branches:', branches.map(b => ({ id: b.id, type: typeof b.id })))
+
+      const branchIdStr = data.branch_id !== undefined && data.branch_id !== null ? String(data.branch_id) : ''
+      console.log('[v0] Setting branch_id to:', branchIdStr)
+
+      setForm({
+        first_name: data.first_name || '',
+        last_name: data.last_name || '',
+        branch_id: branchIdStr,
+        mobile: data.mobile || '',
+        email: data.email || '',
+        remarks: data.remarks || '',
+      })
+      setEditId(data.id || id)
+      setFormErrors({})
+      setIsModalOpen(true)
+    } catch (err) {
+      console.error('Edit fetch error:', err)
+      alert('Failed to fetch manager details')
+    }
+  }
+
+  // HANDLE INPUT
+  const handleChange = (e) => {
+    const { name, value } = e.target
+    setForm({ ...form, [name]: value })
+    // Clear error when user types
+    if (formErrors[name]) {
+      setFormErrors({ ...formErrors, [name]: '' })
+    }
+  }
+
+  // CREATE / UPDATE
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    if (!validateForm()) return
+
+    try {
+      const payload = {
+        first_name: form.first_name,
+        last_name: form.last_name,
+        branch_id: Number(form.branch_id),
+        mobile: form.mobile,
+        email: form.email,
+        remarks: form.remarks,
+      }
+      
+      if (editId) {
+        await axios.put(`${API}/update_manager`, { id: editId, ...payload })
+      } else {
+        await axios.post(`${API}/create_manager`, payload)
+      }
+      closeModal()
+      fetchManagers()
+    } catch (err) {
+      console.error('Submit error:', err)
+      alert('Failed to save manager')
+    }
+  }
+
+  // DELETE - Open confirmation modal
+  const openDeleteModal = (manager) => {
+    setDeleteModal({ isOpen: true, manager })
+  }
+
+  const closeDeleteModal = () => {
+    setDeleteModal({ isOpen: false, manager: null })
+  }
+
+  const confirmDelete = async () => {
+    if (!deleteModal.manager) return
+    try {
+      await axios.delete(`${API}/delete_manager/${deleteModal.manager.id}`)
+      closeDeleteModal()
+      fetchManagers()
+    } catch (err) {
+      console.error('Delete error:', err)
+      alert('Failed to delete manager')
+    }
+  }
+
+  // SEARCH
+  const handleSearch = () => {
+    setPageIndex(1)
+    fetchManagers()
+  }
+
+  // SORT
+  const handleSort = (column) => {
+    if (sortBy === column) {
+      setSortOrder(sortOrder === 'ASC' ? 'DESC' : 'ASC')
+    } else {
+      setSortBy(column)
+      setSortOrder('ASC')
+    }
+  }
+
+  // MODAL HANDLERS
+  const openCreateModal = () => {
+    setForm({
+      first_name: '',
+      last_name: '',
+      branch_id: '',
+      mobile: '',
+      email: '',
+      remarks: '',
+    })
+    setEditId(null)
+    setFormErrors({})
+    setIsModalOpen(true)
+  }
+
+  const closeModal = () => {
+    setIsModalOpen(false)
+    setForm({
+      first_name: '',
+      last_name: '',
+      branch_id: '',
+      mobile: '',
+      email: '',
+      remarks: '',
+    })
+    setEditId(null)
+    setFormErrors({})
+  }
+
+  // Get branch name by id
+  const getBranchName = (branchId) => {
+    const branch = branches.find((b) => b.id === branchId)
+    return branch ? branch.name : '-'
+  }
+
+  return (
+    <div className="space-y-6 min-w-0">
+      {/* Page Header */}
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="min-w-0">
+          <h1 className="text-2xl font-bold text-slate-800">Manager Management</h1>
+          <p className="text-slate-500 mt-1">Manage your institute managers</p>
+        </div>
+        <button
+          onClick={openCreateModal}
+          className="flex items-center gap-2 px-4 py-2.5 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors shadow-sm shrink-0"
+        >
+          <Plus className="w-5 h-5" />
+          <span className="font-medium">Add Manager</span>
+        </button>
+      </div>
+
+      {/* Filters Card */}
+      <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-200">
+        <div className="flex flex-wrap items-center gap-4">
+          {/* Search */}
+          <div className="relative flex-1 min-w-[200px]">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Search managers..."
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+              className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
+            />
+          </div>
+
+          {/* Page Size */}
+          <select
+            value={pageSize}
+            onChange={(e) => setPageSize(Number(e.target.value))}
+            className="px-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-primary-500"
+          >
+            <option value={5}>5 per page</option>
+            <option value={10}>10 per page</option>
+            <option value={25}>25 per page</option>
+            <option value={50}>50 per page</option>
+          </select>
+
+          {/* Search Button */}
+          <button
+            onClick={handleSearch}
+            className="px-4 py-2.5 bg-slate-800 text-white rounded-lg hover:bg-slate-700 transition-colors text-sm font-medium"
+          >
+            Search
+          </button>
+        </div>
+      </div>
+
+      {/* Table Card */}
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[800px]">
+            <thead>
+              <tr className="bg-slate-50 border-b border-slate-200">
+                <th
+                  onClick={() => handleSort('first_name')}
+                  className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider cursor-pointer hover:bg-slate-100 transition-colors"
+                >
+                  <div className="flex items-center gap-2">
+                    Manager
+                    <ArrowUpDown className={`w-4 h-4 ${sortBy === 'first_name' ? 'text-primary-600' : 'text-slate-400'}`} />
+                  </div>
+                </th>
+                <th
+                  onClick={() => handleSort('email')}
+                  className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider cursor-pointer hover:bg-slate-100 transition-colors"
+                >
+                  <div className="flex items-center gap-2">
+                    Email
+                    <ArrowUpDown className={`w-4 h-4 ${sortBy === 'email' ? 'text-primary-600' : 'text-slate-400'}`} />
+                  </div>
+                </th>
+                <th
+                  onClick={() => handleSort('mobile')}
+                  className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider cursor-pointer hover:bg-slate-100 transition-colors"
+                >
+                  <div className="flex items-center gap-2">
+                    Contact
+                    <ArrowUpDown className={`w-4 h-4 ${sortBy === 'mobile' ? 'text-primary-600' : 'text-slate-400'}`} />
+                  </div>
+                </th>
+                <th
+                  onClick={() => handleSort('branch_id')}
+                  className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider cursor-pointer hover:bg-slate-100 transition-colors"
+                >
+                  <div className="flex items-center gap-2">
+                    Branch
+                    <ArrowUpDown className={`w-4 h-4 ${sortBy === 'branch_id' ? 'text-primary-600' : 'text-slate-400'}`} />
+                  </div>
+                </th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                  Remarks
+                </th>
+                <th className="px-6 py-4 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {loading ? (
+                <tr>
+                  <td colSpan="6" className="px-6 py-12 text-center text-slate-500">
+                    <div className="flex items-center justify-center gap-2">
+                      <div className="w-5 h-5 border-2 border-primary-600 border-t-transparent rounded-full animate-spin"></div>
+                      Loading...
+                    </div>
+                  </td>
+                </tr>
+              ) : managers.length > 0 ? (
+                managers.map((manager) => (
+                  <tr key={manager.id} className="hover:bg-slate-50 transition-colors">
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center">
+                          <UserCog className="w-5 h-5 text-amber-600" />
+                        </div>
+                        <div>
+                          <span className="text-sm font-medium text-slate-800 block">
+                            {manager.first_name} {manager.last_name}
+                          </span>
+                          <span className="text-xs text-slate-500">ID: {manager.id}</span>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-2 text-sm text-slate-600">
+                        <Mail className="w-4 h-4 text-slate-400" />
+                        {manager.email}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-2 text-sm text-slate-600">
+                        <Phone className="w-4 h-4 text-slate-400" />
+                        {manager.mobile}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-2">
+                        <Building2 className="w-4 h-4 text-slate-400" />
+                        <span className="text-sm text-slate-600">
+                          {manager.branch_name || getBranchName(manager.branch_id)}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-slate-500 max-w-xs truncate">
+                      {manager.remarks || '-'}
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => handleEdit(manager.id)}
+                          className="p-2 text-slate-600 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
+                          title="Edit"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => openDeleteModal(manager)}
+                          className="p-2 text-slate-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          title="Delete"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="6" className="px-6 py-12 text-center text-slate-500">
+                    No managers found. Add your first manager!
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Pagination */}
+        <div className="flex items-center justify-between px-6 py-4 border-t border-slate-200 bg-slate-50">
+          <p className="text-sm text-slate-600">
+            Page {pageIndex} - Showing {managers.length} managers
+          </p>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setPageIndex(pageIndex - 1)}
+              disabled={pageIndex === 1}
+              className="flex items-center gap-1 px-3 py-2 text-sm font-medium text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              <ChevronLeft className="w-4 h-4" />
+              Prev
+            </button>
+            <span className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg">
+              {pageIndex}
+            </span>
+            <button
+              onClick={() => setPageIndex(pageIndex + 1)}
+              disabled={managers.length < pageSize}
+              className="flex items-center gap-1 px-3 py-2 text-sm font-medium text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              Next
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Create/Edit Modal */}
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 sticky top-0 bg-white rounded-t-2xl">
+              <h2 className="text-xl font-bold text-slate-800">
+                {editId ? 'Edit Manager' : 'Add New Manager'}
+              </h2>
+              <button
+                onClick={closeModal}
+                className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5 text-slate-500" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <form onSubmit={handleSubmit} className="p-6 space-y-5">
+              {/* Personal Information */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold text-slate-700 uppercase tracking-wide">
+                  Personal Information
+                </h3>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                      First Name <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      name="first_name"
+                      value={form.first_name}
+                      onChange={handleChange}
+                      className={`w-full px-4 py-2.5 border ${
+                        formErrors.first_name ? 'border-red-300' : 'border-slate-300'
+                      } rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent`}
+                      placeholder="Enter first name"
+                    />
+                    {formErrors.first_name && (
+                      <p className="mt-1 text-xs text-red-600">{formErrors.first_name}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                      Last Name <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      name="last_name"
+                      value={form.last_name}
+                      onChange={handleChange}
+                      className={`w-full px-4 py-2.5 border ${
+                        formErrors.last_name ? 'border-red-300' : 'border-slate-300'
+                      } rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent`}
+                      placeholder="Enter last name"
+                    />
+                    {formErrors.last_name && (
+                      <p className="mt-1 text-xs text-red-600">{formErrors.last_name}</p>
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                    Branch <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    name="branch_id"
+                    value={form.branch_id}
+                    onChange={handleChange}
+                    className={`w-full px-4 py-2.5 border ${
+                      formErrors.branch_id ? 'border-red-300' : 'border-slate-300'
+                    } rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent`}
+                  >
+                    <option value="">Select Branch</option>
+                    {branches.map((branch) => {
+                      const branchValue = String(branch.id)
+                      const isSelected = form.branch_id === branchValue
+                      console.log('[v0] Branch option:', branchValue, 'form.branch_id:', form.branch_id, 'match:', isSelected)
+                      return (
+                        <option key={branch.id} value={branchValue}>
+                          {branch.branch_with_location || `${branch.name} - ${branch.location}`}
+                        </option>
+                      )
+                    })}
+                  </select>
+                  {formErrors.branch_id && (
+                    <p className="mt-1 text-xs text-red-600">{formErrors.branch_id}</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Contact Information */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold text-slate-700 uppercase tracking-wide">
+                  Contact Information
+                </h3>
+                
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                    Mobile <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="tel"
+                    name="mobile"
+                    value={form.mobile}
+                    onChange={handleChange}
+                    className={`w-full px-4 py-2.5 border ${
+                      formErrors.mobile ? 'border-red-300' : 'border-slate-300'
+                    } rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent`}
+                    placeholder="Enter 10-digit mobile number"
+                  />
+                  {formErrors.mobile && (
+                    <p className="mt-1 text-xs text-red-600">{formErrors.mobile}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                    Email <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="email"
+                    name="email"
+                    value={form.email}
+                    onChange={handleChange}
+                    className={`w-full px-4 py-2.5 border ${
+                      formErrors.email ? 'border-red-300' : 'border-slate-300'
+                    } rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent`}
+                    placeholder="Enter email address"
+                  />
+                  {formErrors.email && (
+                    <p className="mt-1 text-xs text-red-600">{formErrors.email}</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Additional Information */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold text-slate-700 uppercase tracking-wide">
+                  Additional Information
+                </h3>
+                
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                    Remarks
+                  </label>
+                  <textarea
+                    name="remarks"
+                    value={form.remarks}
+                    onChange={handleChange}
+                    rows={3}
+                    className="w-full px-4 py-2.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
+                    placeholder="Enter any additional remarks..."
+                  />
+                </div>
+              </div>
+
+              {/* Form Actions */}
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-200">
+                <button
+                  type="button"
+                  onClick={closeModal}
+                  className="px-4 py-2.5 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2.5 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors"
+                >
+                  {editId ? 'Update Manager' : 'Create Manager'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteModal.isOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+            <div className="p-6">
+              <div className="flex items-center justify-center w-12 h-12 bg-red-100 rounded-full mx-auto mb-4">
+                <AlertTriangle className="w-6 h-6 text-red-600" />
+              </div>
+              <h3 className="text-lg font-bold text-slate-800 text-center mb-2">
+                Delete Manager
+              </h3>
+              <p className="text-slate-600 text-center mb-6">
+                Are you sure you want to delete{' '}
+                <span className="font-semibold">
+                  {deleteModal.manager?.first_name} {deleteModal.manager?.last_name}
+                </span>
+                ? This action cannot be undone.
+              </p>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={closeDeleteModal}
+                  className="flex-1 px-4 py-2.5 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmDelete}
+                  className="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+export default Manager

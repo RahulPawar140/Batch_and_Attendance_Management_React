@@ -3,6 +3,9 @@ import Layout from './components/Layout'
 import Dashboard from './pages/Dashboard'
 import Branch from './pages/Branch'
 import Courses from './pages/Courses'
+import Manager from './pages/Manager'
+import Faculties from './pages/Faculties'
+import Students from './pages/Students'
 
 function App() {
   return (
@@ -12,6 +15,9 @@ function App() {
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="branch" element={<Branch />} />
         <Route path="courses" element={<Courses />} />
+        <Route path="manager" element={<Manager />} />
+        <Route path="faculties" element={<Faculties />} />
+        <Route path="students" element={<Students />} />
       </Route>
     </Routes>
   )

@@ -154,16 +154,16 @@ function Courses() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 min-w-0">
       {/* Page Header */}
-      <div className="flex items-center justify-between">
-        <div>
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="min-w-0">
           <h1 className="text-2xl font-bold text-slate-800">Course Management</h1>
           <p className="text-slate-500 mt-1">Manage your institute courses</p>
         </div>
         <button
           onClick={openCreateModal}
-          className="flex items-center gap-2 px-4 py-2.5 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors shadow-sm"
+          className="flex items-center gap-2 px-4 py-2.5 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors shadow-sm shrink-0"
         >
           <Plus className="w-5 h-5" />
           <span className="font-medium">Add Course</span>
@@ -195,6 +195,7 @@ function Courses() {
             <option value={5}>5 per page</option>
             <option value={10}>10 per page</option>
             <option value={25}>25 per page</option>
+            <option value={50}>50 per page</option>
           </select>
 
           {/* Search Button */}
@@ -210,7 +211,7 @@ function Courses() {
       {/* Table Card */}
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full min-w-[600px]">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-200">
                 {['name', 'description'].map((col) => (
