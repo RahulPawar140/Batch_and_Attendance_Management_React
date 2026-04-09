@@ -21,6 +21,18 @@ const API = 'http://localhost:9998/faculties'
 
 const DAYS_OF_WEEK = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
 
+// Convert 24-hour time to 12-hour AM/PM format
+const convertTo12HourFormat = (time24) => {
+  if (!time24) return ''
+  const [hours, minutes] = time24.split(':')
+  let hour = parseInt(hours, 10)
+  const minute = minutes || '00'
+  const ampm = hour >= 12 ? 'P.M.' : 'A.M.'
+  if (hour > 12) hour -= 12
+  if (hour === 0) hour = 12
+  return `${hour.toString().padStart(2, '0')}:${minute} ${ampm}`
+}
+
 function Faculties() {
   const [faculties, setFaculties] = useState([])
   const [loading, setLoading] = useState(true)
@@ -534,7 +546,7 @@ function Faculties() {
                                     key={idx}
                                     className="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full"
                                   >
-                                    {time.start} - {time.end}
+                                    {convertTo12HourFormat(time.start)} - {convertTo12HourFormat(time.end)}
                                   </span>
                                 ))}
                               </div>
@@ -737,31 +749,38 @@ function Faculties() {
                       <div className="space-y-2">
                         {form.availability[day].length > 0 ? (
                           form.availability[day].map((slot, index) => (
-                            <div key={index} className="flex items-center gap-2">
-                              <input
-                                type="time"
-                                value={slot.start}
-                                onChange={(e) =>
-                                  handleTimeSlotChange(day, index, 'start', e.target.value)
-                                }
-                                className="flex-1 px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 bg-white"
-                              />
-                              <span className="text-slate-400 text-sm">to</span>
-                              <input
-                                type="time"
-                                value={slot.end}
-                                onChange={(e) =>
-                                  handleTimeSlotChange(day, index, 'end', e.target.value)
-                                }
-                                className="flex-1 px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 bg-white"
-                              />
-                              <button
-                                type="button"
-                                onClick={() => removeTimeSlot(day, index)}
-                                className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                              >
-                                <X className="w-4 h-4" />
-                              </button>
+                            <div key={index} className="space-y-1">
+                              <div className="flex items-center gap-2">
+                                <input
+                                  type="time"
+                                  value={slot.start}
+                                  onChange={(e) =>
+                                    handleTimeSlotChange(day, index, 'start', e.target.value)
+                                  }
+                                  className="flex-1 px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 bg-white"
+                                />
+                                <span className="text-slate-400 text-sm">to</span>
+                                <input
+                                  type="time"
+                                  value={slot.end}
+                                  onChange={(e) =>
+                                    handleTimeSlotChange(day, index, 'end', e.target.value)
+                                  }
+                                  className="flex-1 px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 bg-white"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => removeTimeSlot(day, index)}
+                                  className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                >
+                                  <X className="w-4 h-4" />
+                                </button>
+                              </div>
+                              {slot.start && slot.end && (
+                                <div className="px-3 py-1 bg-slate-100 rounded text-xs text-slate-600">
+                                  Preview: {convertTo12HourFormat(slot.start)} - {convertTo12HourFormat(slot.end)}
+                                </div>
+                              )}
                             </div>
                           ))
                         ) : (
