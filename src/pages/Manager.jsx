@@ -317,8 +317,17 @@ function Manager() {
                   className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider cursor-pointer hover:bg-slate-100 transition-colors"
                 >
                   <div className="flex items-center gap-2">
-                    Contact
+                    Email
                     <ArrowUpDown className={`w-4 h-4 ${sortBy === 'email' ? 'text-primary-600' : 'text-slate-400'}`} />
+                  </div>
+                </th>
+                <th
+                  onClick={() => handleSort('mobile')}
+                  className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider cursor-pointer hover:bg-slate-100 transition-colors"
+                >
+                  <div className="flex items-center gap-2">
+                    Contact
+                    <ArrowUpDown className={`w-4 h-4 ${sortBy === 'mobile' ? 'text-primary-600' : 'text-slate-400'}`} />
                   </div>
                 </th>
                 <th
@@ -341,7 +350,7 @@ function Manager() {
             <tbody className="divide-y divide-slate-100">
               {loading ? (
                 <tr>
-                  <td colSpan="5" className="px-6 py-12 text-center text-slate-500">
+                  <td colSpan="6" className="px-6 py-12 text-center text-slate-500">
                     <div className="flex items-center justify-center gap-2">
                       <div className="w-5 h-5 border-2 border-primary-600 border-t-transparent rounded-full animate-spin"></div>
                       Loading...
@@ -365,15 +374,15 @@ function Manager() {
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2 text-sm text-slate-600">
-                          <Mail className="w-4 h-4 text-slate-400" />
-                          {manager.email}
-                        </div>
-                        <div className="flex items-center gap-2 text-sm text-slate-600">
-                          <Phone className="w-4 h-4 text-slate-400" />
-                          {manager.mobile}
-                        </div>
+                      <div className="flex items-center gap-2 text-sm text-slate-600">
+                        <Mail className="w-4 h-4 text-slate-400" />
+                        {manager.email}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-2 text-sm text-slate-600">
+                        <Phone className="w-4 h-4 text-slate-400" />
+                        {manager.mobile}
                       </div>
                     </td>
                     <td className="px-6 py-4">
@@ -409,7 +418,7 @@ function Manager() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan="5" className="px-6 py-12 text-center text-slate-500">
+                  <td colSpan="6" className="px-6 py-12 text-center text-slate-500">
                     No managers found. Add your first manager!
                   </td>
                 </tr>

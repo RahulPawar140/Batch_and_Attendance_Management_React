@@ -319,8 +319,17 @@ function Students() {
                   className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider cursor-pointer hover:bg-slate-100 transition-colors"
                 >
                   <div className="flex items-center gap-2">
-                    Contact
+                    Email
                     <ArrowUpDown className={`w-4 h-4 ${sortBy === 'email' ? 'text-primary-600' : 'text-slate-400'}`} />
+                  </div>
+                </th>
+                <th
+                  onClick={() => handleSort('mobile')}
+                  className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider cursor-pointer hover:bg-slate-100 transition-colors"
+                >
+                  <div className="flex items-center gap-2">
+                    Contact
+                    <ArrowUpDown className={`w-4 h-4 ${sortBy === 'mobile' ? 'text-primary-600' : 'text-slate-400'}`} />
                   </div>
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
@@ -337,7 +346,7 @@ function Students() {
             <tbody className="divide-y divide-slate-100">
               {loading ? (
                 <tr>
-                  <td colSpan="6" className="px-6 py-12 text-center text-slate-500">
+                  <td colSpan="7" className="px-6 py-12 text-center text-slate-500">
                     <div className="flex items-center justify-center gap-2">
                       <div className="w-5 h-5 border-2 border-primary-600 border-t-transparent rounded-full animate-spin"></div>
                       Loading...
@@ -369,18 +378,23 @@ function Students() {
                       </div>
                     </td>
                     <td className="px-6 py-4">
+                      <div className="flex items-center gap-2 text-sm text-slate-600">
+                        <Mail className="w-4 h-4 text-slate-400" />
+                        {student.email}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
                       <div className="space-y-1">
-                        <div className="flex items-center gap-2 text-sm text-slate-600">
-                          <Mail className="w-4 h-4 text-slate-400" />
-                          {student.email}
-                        </div>
                         <div className="flex items-center gap-2 text-sm text-slate-600">
                           <Phone className="w-4 h-4 text-slate-400" />
                           {student.mobile}
-                          {student.alternate_mobile && (
-                            <span className="text-slate-400">/ {student.alternate_mobile}</span>
-                          )}
                         </div>
+                        {student.alternate_mobile && (
+                          <div className="flex items-center gap-2 text-sm text-slate-500">
+                            <Phone className="w-4 h-4 text-slate-300" />
+                            {student.alternate_mobile}
+                          </div>
+                        )}
                       </div>
                     </td>
                     <td className="px-6 py-4">
@@ -414,7 +428,7 @@ function Students() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan="6" className="px-6 py-12 text-center text-slate-500">
+                  <td colSpan="7" className="px-6 py-12 text-center text-slate-500">
                     No students found. Add your first student!
                   </td>
                 </tr>
@@ -563,40 +577,38 @@ function Students() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                    Date of Birth
-                  </label>
-                  <input
-                    type="date"
-                    name="dob"
-                    value={form.dob}
-                    onChange={handleChange}
-                    className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
-                  />
-                </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                  Email <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="email"
+                  name="email"
+                  value={form.email}
+                  onChange={handleChange}
+                  placeholder="Enter email address"
+                  className={`w-full px-4 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-1 ${
+                    formErrors.email
+                      ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
+                      : 'border-slate-200 focus:border-primary-500 focus:ring-primary-500'
+                  }`}
+                />
+                {formErrors.email && (
+                  <p className="mt-1 text-xs text-red-500">{formErrors.email}</p>
+                )}
+              </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                    Email <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="email"
-                    name="email"
-                    value={form.email}
-                    onChange={handleChange}
-                    placeholder="Enter email address"
-                    className={`w-full px-4 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-1 ${
-                      formErrors.email
-                        ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
-                        : 'border-slate-200 focus:border-primary-500 focus:ring-primary-500'
-                    }`}
-                  />
-                  {formErrors.email && (
-                    <p className="mt-1 text-xs text-red-500">{formErrors.email}</p>
-                  )}
-                </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                  Date of Birth
+                </label>
+                <input
+                  type="date"
+                  name="dob"
+                  value={form.dob}
+                  onChange={handleChange}
+                  className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
+                />
               </div>
 
               <div>
