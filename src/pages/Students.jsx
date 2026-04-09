@@ -13,11 +13,11 @@ import {
   AlertTriangle,
   Phone,
   Mail,
-  MapPin,
-  Calendar
+  Calendar,
+  Hash
 } from 'lucide-react'
 
-const API = 'http://localhost:9998/student'
+const API = 'http://localhost:9998/students'
 
 function Students() {
   const [students, setStudents] = useState([])
@@ -27,10 +27,9 @@ function Students() {
     first_name: '',
     last_name: '',
     mobile: '',
-    email: '',
+    alternate_mobile: '',
     dob: '',
-    gender: '',
-    address: '',
+    email: '',
     remarks: '',
   })
   const [editId, setEditId] = useState(null)
@@ -80,15 +79,17 @@ function Students() {
     if (!form.last_name.trim()) errors.last_name = 'Last name is required'
     if (!form.mobile.trim()) {
       errors.mobile = 'Mobile number is required'
-    } else if (!/^[0-9]{10}$/.test(form.mobile)) {
-      errors.mobile = 'Enter a valid 10-digit mobile number'
+    } else if (!/^[0-9]{10,11}$/.test(form.mobile)) {
+      errors.mobile = 'Enter a valid mobile number'
+    }
+    if (form.alternate_mobile && !/^[0-9]{10,11}$/.test(form.alternate_mobile)) {
+      errors.alternate_mobile = 'Enter a valid mobile number'
     }
     if (!form.email.trim()) {
       errors.email = 'Email is required'
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
       errors.email = 'Enter a valid email address'
     }
-    if (!form.gender) errors.gender = 'Gender is required'
     setFormErrors(errors)
     return Object.keys(errors).length === 0
   }
@@ -104,10 +105,9 @@ function Students() {
         first_name: data.first_name || '',
         last_name: data.last_name || '',
         mobile: data.mobile || '',
-        email: data.email || '',
+        alternate_mobile: data.alternate_mobile || '',
         dob: data.dob ? data.dob.split('T')[0] : '',
-        gender: data.gender || '',
-        address: data.address || '',
+        email: data.email || '',
         remarks: data.remarks || '',
       })
       setEditId(data.id || id)
@@ -134,10 +134,20 @@ function Students() {
     if (!validateForm()) return
 
     try {
+      const payload = {
+        first_name: form.first_name,
+        last_name: form.last_name,
+        mobile: form.mobile,
+        alternate_mobile: form.alternate_mobile,
+        dob: form.dob,
+        email: form.email,
+        remarks: form.remarks,
+      }
+
       if (editId) {
-        await axios.put(`${API}/update_student`, { id: editId, ...form })
+        await axios.put(`${API}/update_student`, { id: editId, ...payload })
       } else {
-        await axios.post(`${API}/create_student`, form)
+        await axios.post(`${API}/create_student`, payload)
       }
       closeModal()
       fetchStudents()
@@ -190,10 +200,9 @@ function Students() {
       first_name: '',
       last_name: '',
       mobile: '',
-      email: '',
+      alternate_mobile: '',
       dob: '',
-      gender: '',
-      address: '',
+      email: '',
       remarks: '',
     })
     setEditId(null)
@@ -207,10 +216,9 @@ function Students() {
       first_name: '',
       last_name: '',
       mobile: '',
-      email: '',
+      alternate_mobile: '',
       dob: '',
-      gender: '',
-      address: '',
+      email: '',
       remarks: '',
     })
     setEditId(null)
@@ -298,6 +306,15 @@ function Students() {
                   </div>
                 </th>
                 <th
+                  onClick={() => handleSort('roll_no')}
+                  className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider cursor-pointer hover:bg-slate-100 transition-colors"
+                >
+                  <div className="flex items-center gap-2">
+                    Roll No
+                    <ArrowUpDown className={`w-4 h-4 ${sortBy === 'roll_no' ? 'text-primary-600' : 'text-slate-400'}`} />
+                  </div>
+                </th>
+                <th
                   onClick={() => handleSort('email')}
                   className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider cursor-pointer hover:bg-slate-100 transition-colors"
                 >
@@ -307,10 +324,10 @@ function Students() {
                   </div>
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                  Details
+                  Date of Birth
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                  Address
+                  Remarks
                 </th>
                 <th className="px-6 py-4 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">
                   Actions
@@ -320,7 +337,7 @@ function Students() {
             <tbody className="divide-y divide-slate-100">
               {loading ? (
                 <tr>
-                  <td colSpan="5" className="px-6 py-12 text-center text-slate-500">
+                  <td colSpan="6" className="px-6 py-12 text-center text-slate-500">
                     <div className="flex items-center justify-center gap-2">
                       <div className="w-5 h-5 border-2 border-primary-600 border-t-transparent rounded-full animate-spin"></div>
                       Loading...
@@ -332,20 +349,8 @@ function Students() {
                   <tr key={student.id} className="hover:bg-slate-50 transition-colors">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                          student.gender === 'Male' 
-                            ? 'bg-blue-100' 
-                            : student.gender === 'Female' 
-                            ? 'bg-pink-100' 
-                            : 'bg-slate-100'
-                        }`}>
-                          <User className={`w-5 h-5 ${
-                            student.gender === 'Male' 
-                              ? 'text-blue-600' 
-                              : student.gender === 'Female' 
-                              ? 'text-pink-600' 
-                              : 'text-slate-600'
-                          }`} />
+                        <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">
+                          <User className="w-5 h-5 text-indigo-600" />
                         </div>
                         <div>
                           <span className="text-sm font-medium text-slate-800 block">
@@ -353,6 +358,14 @@ function Students() {
                           </span>
                           <span className="text-xs text-slate-500">ID: {student.id}</span>
                         </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-2">
+                        <Hash className="w-4 h-4 text-slate-400" />
+                        <span className="text-sm font-medium text-slate-700">
+                          {student.roll_no || '-'}
+                        </span>
                       </div>
                     </td>
                     <td className="px-6 py-4">
@@ -364,31 +377,20 @@ function Students() {
                         <div className="flex items-center gap-2 text-sm text-slate-600">
                           <Phone className="w-4 h-4 text-slate-400" />
                           {student.mobile}
+                          {student.alternate_mobile && (
+                            <span className="text-slate-400">/ {student.alternate_mobile}</span>
+                          )}
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2 text-sm text-slate-600">
-                          <Calendar className="w-4 h-4 text-slate-400" />
-                          {formatDate(student.dob)}
-                        </div>
-                        <span className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-full ${
-                          student.gender === 'Male'
-                            ? 'bg-blue-100 text-blue-700'
-                            : student.gender === 'Female'
-                            ? 'bg-pink-100 text-pink-700'
-                            : 'bg-slate-100 text-slate-700'
-                        }`}>
-                          {student.gender || '-'}
-                        </span>
+                      <div className="flex items-center gap-2 text-sm text-slate-600">
+                        <Calendar className="w-4 h-4 text-slate-400" />
+                        {formatDate(student.dob)}
                       </div>
                     </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-start gap-2 text-sm text-slate-600 max-w-xs">
-                        <MapPin className="w-4 h-4 text-slate-400 mt-0.5 flex-shrink-0" />
-                        <span className="truncate">{student.address || '-'}</span>
-                      </div>
+                    <td className="px-6 py-4 text-sm text-slate-500 max-w-xs truncate">
+                      {student.remarks || '-'}
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center justify-end gap-2">
@@ -412,7 +414,7 @@ function Students() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan="5" className="px-6 py-12 text-center text-slate-500">
+                  <td colSpan="6" className="px-6 py-12 text-center text-slate-500">
                     No students found. Add your first student!
                   </td>
                 </tr>
@@ -457,9 +459,9 @@ function Students() {
             className="absolute inset-0 bg-black/50 backdrop-blur-sm"
             onClick={closeModal}
           ></div>
-          <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 overflow-hidden max-h-[90vh] overflow-y-auto">
+          <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 overflow-hidden">
             {/* Modal Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 sticky top-0 bg-white z-10">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
               <h2 className="text-lg font-semibold text-slate-800">
                 {editId ? 'Edit Student' : 'Add New Student'}
               </h2>
@@ -520,6 +522,50 @@ function Students() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                    Mobile <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="tel"
+                    name="mobile"
+                    value={form.mobile}
+                    onChange={handleChange}
+                    placeholder="Enter mobile number"
+                    className={`w-full px-4 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-1 ${
+                      formErrors.mobile
+                        ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
+                        : 'border-slate-200 focus:border-primary-500 focus:ring-primary-500'
+                    }`}
+                  />
+                  {formErrors.mobile && (
+                    <p className="mt-1 text-xs text-red-500">{formErrors.mobile}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                    Alternate Mobile
+                  </label>
+                  <input
+                    type="tel"
+                    name="alternate_mobile"
+                    value={form.alternate_mobile}
+                    onChange={handleChange}
+                    placeholder="Enter alternate mobile"
+                    className={`w-full px-4 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-1 ${
+                      formErrors.alternate_mobile
+                        ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
+                        : 'border-slate-200 focus:border-primary-500 focus:ring-primary-500'
+                    }`}
+                  />
+                  {formErrors.alternate_mobile && (
+                    <p className="mt-1 text-xs text-red-500">{formErrors.alternate_mobile}</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">
                     Date of Birth
                   </label>
                   <input
@@ -533,84 +579,24 @@ function Students() {
 
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                    Gender <span className="text-red-500">*</span>
+                    Email <span className="text-red-500">*</span>
                   </label>
-                  <select
-                    name="gender"
-                    value={form.gender}
+                  <input
+                    type="email"
+                    name="email"
+                    value={form.email}
                     onChange={handleChange}
+                    placeholder="Enter email address"
                     className={`w-full px-4 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-1 ${
-                      formErrors.gender
+                      formErrors.email
                         ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
                         : 'border-slate-200 focus:border-primary-500 focus:ring-primary-500'
                     }`}
-                  >
-                    <option value="">Select gender</option>
-                    <option value="Male">Male</option>
-                    <option value="Female">Female</option>
-                    <option value="Other">Other</option>
-                  </select>
-                  {formErrors.gender && (
-                    <p className="mt-1 text-xs text-red-500">{formErrors.gender}</p>
+                  />
+                  {formErrors.email && (
+                    <p className="mt-1 text-xs text-red-500">{formErrors.email}</p>
                   )}
                 </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                  Mobile Number <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="tel"
-                  name="mobile"
-                  value={form.mobile}
-                  onChange={handleChange}
-                  placeholder="Enter 10-digit mobile number"
-                  maxLength={10}
-                  className={`w-full px-4 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-1 ${
-                    formErrors.mobile
-                      ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
-                      : 'border-slate-200 focus:border-primary-500 focus:ring-primary-500'
-                  }`}
-                />
-                {formErrors.mobile && (
-                  <p className="mt-1 text-xs text-red-500">{formErrors.mobile}</p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                  Email <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="email"
-                  name="email"
-                  value={form.email}
-                  onChange={handleChange}
-                  placeholder="Enter email address"
-                  className={`w-full px-4 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-1 ${
-                    formErrors.email
-                      ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
-                      : 'border-slate-200 focus:border-primary-500 focus:ring-primary-500'
-                  }`}
-                />
-                {formErrors.email && (
-                  <p className="mt-1 text-xs text-red-500">{formErrors.email}</p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                  Address
-                </label>
-                <textarea
-                  name="address"
-                  value={form.address}
-                  onChange={handleChange}
-                  rows={2}
-                  placeholder="Enter full address"
-                  className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 resize-none"
-                />
               </div>
 
               <div>
@@ -621,8 +607,8 @@ function Students() {
                   name="remarks"
                   value={form.remarks}
                   onChange={handleChange}
-                  rows={2}
-                  placeholder="Enter any remarks"
+                  rows={3}
+                  placeholder="Enter remarks (optional)"
                   className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 resize-none"
                 />
               </div>
