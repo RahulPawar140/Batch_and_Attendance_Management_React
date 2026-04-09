@@ -7,15 +7,19 @@ import {
   CalendarCheck, 
   FileText,
   Settings,
-  BookOpen
+  BookOpen,
+  UserCog,
+  User
 } from 'lucide-react'
 
 const navItems = [
   { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
   { name: 'Branch', path: '/branch', icon: Building2 },
   { name: 'Courses', path: '/courses', icon: BookOpen },
+  { name: 'Manager', path: '/manager', icon: UserCog },
+  { name: 'Faculties', path: '/faculties', icon: GraduationCap },
+  { name: 'Students', path: '/students', icon: User },
   { name: 'Batches', path: '/batches', icon: Users },
-  { name: 'Students', path: '/students', icon: GraduationCap },
   { name: 'Attendance', path: '/attendance', icon: CalendarCheck },
   { name: 'Reports', path: '/reports', icon: FileText },
 ]
