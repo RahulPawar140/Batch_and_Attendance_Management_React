@@ -13,11 +13,15 @@ import {
   AlertTriangle,
   Phone,
   Mail,
-  Building2
+  Building2,
+  Clock,
+  Calendar
 } from 'lucide-react'
 
 const API = 'http://localhost:9998/manager'
 const BRANCH_API = 'http://localhost:9998/branch'
+
+const DAYS_OF_WEEK = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
 
 function Manager() {
   const [managers, setManagers] = useState([])
@@ -30,6 +34,7 @@ function Manager() {
     branch_id: '',
     mobile: '',
     email: '',
+    availability: {}, // { Monday: [{start: '09:00', end: '17:00'}], Tuesday: [...] }
     remarks: '',
   })
   const [editId, setEditId] = useState(null)
@@ -104,6 +109,15 @@ function Manager() {
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
       errors.email = 'Enter a valid email address'
     }
+    
+    // Check if at least one day has at least one valid time slot
+    const hasValidAvailability = Object.values(form.availability).some(
+      slots => slots && slots.length > 0 && slots.some(slot => slot.start && slot.end)
+    )
+    if (!hasValidAvailability) {
+      errors.availability = 'Add at least one time slot for any day'
+    }
+    
     setFormErrors(errors)
     return Object.keys(errors).length === 0
   }
@@ -115,12 +129,23 @@ function Manager() {
       let data = res.data.data || res.data
       if (Array.isArray(data)) data = data[0]
 
+      // Parse availability if stored as string
+      let availability = data.availability || {}
+      if (typeof availability === 'string') {
+        try {
+          availability = JSON.parse(availability)
+        } catch {
+          availability = {}
+        }
+      }
+
       setForm({
         first_name: data.first_name || '',
         last_name: data.last_name || '',
         branch_id: data.branch_id || '',
         mobile: data.mobile || '',
         email: data.email || '',
+        availability: availability,
         remarks: data.remarks || '',
       })
       setEditId(data.id || id)
@@ -142,16 +167,85 @@ function Manager() {
     }
   }
 
+  // Handle day-wise time slot changes
+  const handleTimeSlotChange = (day, slotIndex, field, value) => {
+    const daySlots = form.availability[day] || [{ start: '', end: '' }]
+    const updatedSlots = [...daySlots]
+    updatedSlots[slotIndex] = { ...updatedSlots[slotIndex], [field]: value }
+    
+    setForm({
+      ...form,
+      availability: {
+        ...form.availability,
+        [day]: updatedSlots
+      }
+    })
+    
+    if (formErrors.availability) {
+      setFormErrors({ ...formErrors, availability: '' })
+    }
+  }
+
+  // Add time slot for a specific day
+  const addTimeSlot = (day) => {
+    const daySlots = form.availability[day] || []
+    setForm({
+      ...form,
+      availability: {
+        ...form.availability,
+        [day]: [...daySlots, { start: '', end: '' }]
+      }
+    })
+  }
+
+  // Remove time slot for a specific day
+  const removeTimeSlot = (day, slotIndex) => {
+    const daySlots = form.availability[day] || []
+    if (daySlots.length > 1) {
+      const updatedSlots = daySlots.filter((_, i) => i !== slotIndex)
+      setForm({
+        ...form,
+        availability: {
+          ...form.availability,
+          [day]: updatedSlots
+        }
+      })
+    } else {
+      // Remove the day entirely if removing the last slot
+      const newAvailability = { ...form.availability }
+      delete newAvailability[day]
+      setForm({
+        ...form,
+        availability: newAvailability
+      })
+    }
+  }
+
   // CREATE / UPDATE
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (!validateForm()) return
 
     try {
+      // Clean up availability - remove empty slots
+      const cleanedAvailability = {}
+      Object.keys(form.availability).forEach(day => {
+        const validSlots = form.availability[day].filter(slot => slot.start && slot.end)
+        if (validSlots.length > 0) {
+          cleanedAvailability[day] = validSlots
+        }
+      })
+
       const payload = {
-        ...form,
+        first_name: form.first_name,
+        last_name: form.last_name,
         branch_id: Number(form.branch_id),
+        mobile: form.mobile,
+        email: form.email,
+        availability: cleanedAvailability,
+        remarks: form.remarks,
       }
+      
       if (editId) {
         await axios.put(`${API}/update_manager`, { id: editId, ...payload })
       } else {
@@ -210,6 +304,7 @@ function Manager() {
       branch_id: '',
       mobile: '',
       email: '',
+      availability: {},
       remarks: '',
     })
     setEditId(null)
@@ -225,6 +320,7 @@ function Manager() {
       branch_id: '',
       mobile: '',
       email: '',
+      availability: {},
       remarks: '',
     })
     setEditId(null)
@@ -235,6 +331,26 @@ function Manager() {
   const getBranchName = (branchId) => {
     const branch = branches.find((b) => b.id === branchId)
     return branch ? branch.name : '-'
+  }
+
+  // Format availability for display
+  const formatAvailability = (availability) => {
+    if (!availability) return { days: [], slots: {} }
+    
+    let availabilityObj = availability
+    if (typeof availability === 'string') {
+      try {
+        availabilityObj = JSON.parse(availability)
+      } catch {
+        availabilityObj = {}
+      }
+    }
+    
+    const days = Object.keys(availabilityObj).filter(
+      day => availabilityObj[day] && availabilityObj[day].length > 0
+    )
+    
+    return { days, slots: availabilityObj }
   }
 
   return (
@@ -325,7 +441,7 @@ function Manager() {
                   </div>
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                  Remarks
+                  Availability
                 </th>
                 <th className="px-6 py-4 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">
                   Actions
@@ -343,64 +459,91 @@ function Manager() {
                   </td>
                 </tr>
               ) : managers.length > 0 ? (
-                managers.map((manager) => (
-                  <tr key={manager.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center">
-                          <UserCog className="w-5 h-5 text-amber-600" />
+                managers.map((manager) => {
+                  const availability = formatAvailability(manager.availability)
+                  return (
+                    <tr key={manager.id} className="hover:bg-slate-50 transition-colors">
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center">
+                            <UserCog className="w-5 h-5 text-amber-600" />
+                          </div>
+                          <div>
+                            <span className="text-sm font-medium text-slate-800 block">
+                              {manager.first_name} {manager.last_name}
+                            </span>
+                            <span className="text-xs text-slate-500">ID: {manager.id}</span>
+                          </div>
                         </div>
-                        <div>
-                          <span className="text-sm font-medium text-slate-800 block">
-                            {manager.first_name} {manager.last_name}
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2 text-sm text-slate-600">
+                            <Mail className="w-4 h-4 text-slate-400" />
+                            {manager.email}
+                          </div>
+                          <div className="flex items-center gap-2 text-sm text-slate-600">
+                            <Phone className="w-4 h-4 text-slate-400" />
+                            {manager.mobile}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-2">
+                          <Building2 className="w-4 h-4 text-slate-400" />
+                          <span className="text-sm text-slate-600">
+                            {manager.branch_name || getBranchName(manager.branch_id)}
                           </span>
-                          <span className="text-xs text-slate-500">ID: {manager.id}</span>
                         </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2 text-sm text-slate-600">
-                          <Mail className="w-4 h-4 text-slate-400" />
-                          {manager.email}
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="space-y-2 max-w-md">
+                          {availability.days.length > 0 ? (
+                            availability.days.map((day) => (
+                              <div key={day} className="flex items-start gap-2">
+                                <Calendar className="w-4 h-4 text-slate-400 mt-0.5 flex-shrink-0" />
+                                <div className="flex-1">
+                                  <span className="text-xs font-medium text-slate-700">{day}:</span>
+                                  <div className="flex flex-wrap gap-1 mt-0.5">
+                                    {availability.slots[day]?.map((slot, idx) => (
+                                      <span
+                                        key={idx}
+                                        className="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-100 text-emerald-700 text-xs rounded-full"
+                                      >
+                                        <Clock className="w-3 h-3" />
+                                        {slot.start} - {slot.end}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+                              </div>
+                            ))
+                          ) : (
+                            <span className="text-xs text-slate-400">No availability set</span>
+                          )}
                         </div>
-                        <div className="flex items-center gap-2 text-sm text-slate-600">
-                          <Phone className="w-4 h-4 text-slate-400" />
-                          {manager.mobile}
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            onClick={() => handleEdit(manager.id)}
+                            className="p-2 text-slate-600 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
+                            title="Edit"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => openDeleteModal(manager)}
+                            className="p-2 text-slate-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            title="Delete"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
                         </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
-                        <Building2 className="w-4 h-4 text-slate-400" />
-                        <span className="text-sm text-slate-600">
-                          {manager.branch_name || getBranchName(manager.branch_id)}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-slate-500 max-w-xs truncate">
-                      {manager.remarks || '-'}
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center justify-end gap-2">
-                        <button
-                          onClick={() => handleEdit(manager.id)}
-                          className="p-2 text-slate-600 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
-                          title="Edit"
-                        >
-                          <Edit2 className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => openDeleteModal(manager)}
-                          className="p-2 text-slate-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                          title="Delete"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
+                      </td>
+                    </tr>
+                  )
+                })
               ) : (
                 <tr>
                   <td colSpan="5" className="px-6 py-12 text-center text-slate-500">
@@ -448,9 +591,9 @@ function Manager() {
             className="absolute inset-0 bg-black/50 backdrop-blur-sm"
             onClick={closeModal}
           ></div>
-          <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 overflow-hidden max-h-[90vh] overflow-y-auto">
+          <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-3xl mx-4 overflow-hidden max-h-[90vh] overflow-y-auto">
             {/* Modal Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 sticky top-0 bg-white">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 sticky top-0 bg-white z-10">
               <h2 className="text-lg font-semibold text-slate-800">
                 {editId ? 'Edit Manager' : 'Add New Manager'}
               </h2>
@@ -463,7 +606,8 @@ function Manager() {
             </div>
 
             {/* Modal Form */}
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
+            <form onSubmit={handleSubmit} className="p-6 space-y-6">
+              {/* Basic Info */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1.5">
@@ -534,46 +678,117 @@ function Manager() {
                 )}
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                  Mobile Number <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="tel"
-                  name="mobile"
-                  value={form.mobile}
-                  onChange={handleChange}
-                  placeholder="Enter 10-digit mobile number"
-                  maxLength={10}
-                  className={`w-full px-4 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-1 ${
-                    formErrors.mobile
-                      ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
-                      : 'border-slate-200 focus:border-primary-500 focus:ring-primary-500'
-                  }`}
-                />
-                {formErrors.mobile && (
-                  <p className="mt-1 text-xs text-red-500">{formErrors.mobile}</p>
-                )}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                    Mobile Number <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="tel"
+                    name="mobile"
+                    value={form.mobile}
+                    onChange={handleChange}
+                    placeholder="Enter 10-digit mobile"
+                    className={`w-full px-4 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-1 ${
+                      formErrors.mobile
+                        ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
+                        : 'border-slate-200 focus:border-primary-500 focus:ring-primary-500'
+                    }`}
+                  />
+                  {formErrors.mobile && (
+                    <p className="mt-1 text-xs text-red-500">{formErrors.mobile}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                    Email <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="email"
+                    name="email"
+                    value={form.email}
+                    onChange={handleChange}
+                    placeholder="Enter email address"
+                    className={`w-full px-4 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-1 ${
+                      formErrors.email
+                        ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
+                        : 'border-slate-200 focus:border-primary-500 focus:ring-primary-500'
+                    }`}
+                  />
+                  {formErrors.email && (
+                    <p className="mt-1 text-xs text-red-500">{formErrors.email}</p>
+                  )}
+                </div>
               </div>
 
+              {/* Day-wise Availability */}
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                  Email <span className="text-red-500">*</span>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Day-wise Availability <span className="text-red-500">*</span>
                 </label>
-                <input
-                  type="email"
-                  name="email"
-                  value={form.email}
-                  onChange={handleChange}
-                  placeholder="Enter email address"
-                  className={`w-full px-4 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-1 ${
-                    formErrors.email
-                      ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
-                      : 'border-slate-200 focus:border-primary-500 focus:ring-primary-500'
-                  }`}
-                />
-                {formErrors.email && (
-                  <p className="mt-1 text-xs text-red-500">{formErrors.email}</p>
+                <div className="space-y-3 bg-slate-50 p-4 rounded-lg border border-slate-200">
+                  {DAYS_OF_WEEK.map((day) => {
+                    const daySlots = form.availability[day] || []
+                    const hasSlots = daySlots.length > 0
+                    
+                    return (
+                      <div key={day} className="bg-white p-3 rounded-lg border border-slate-200">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm font-medium text-slate-700">{day}</span>
+                          {!hasSlots && (
+                            <button
+                              type="button"
+                              onClick={() => addTimeSlot(day)}
+                              className="text-xs px-2 py-1 bg-primary-100 text-primary-600 hover:bg-primary-200 rounded transition-colors"
+                            >
+                              Add Slot
+                            </button>
+                          )}
+                        </div>
+                        
+                        {hasSlots && (
+                          <div className="space-y-2">
+                            {daySlots.map((slot, slotIndex) => (
+                              <div key={slotIndex} className="flex items-center gap-2">
+                                <input
+                                  type="time"
+                                  value={slot.start}
+                                  onChange={(e) => handleTimeSlotChange(day, slotIndex, 'start', e.target.value)}
+                                  className="flex-1 px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
+                                />
+                                <span className="text-slate-400">to</span>
+                                <input
+                                  type="time"
+                                  value={slot.end}
+                                  onChange={(e) => handleTimeSlotChange(day, slotIndex, 'end', e.target.value)}
+                                  className="flex-1 px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => removeTimeSlot(day, slotIndex)}
+                                  className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                  title="Remove slot"
+                                >
+                                  <X className="w-4 h-4" />
+                                </button>
+                              </div>
+                            ))}
+                            <button
+                              type="button"
+                              onClick={() => addTimeSlot(day)}
+                              className="text-xs px-2 py-1 text-primary-600 hover:bg-primary-50 rounded transition-colors"
+                            >
+                              + Add Another Slot
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+                {formErrors.availability && (
+                  <p className="mt-1 text-xs text-red-500">{formErrors.availability}</p>
                 )}
               </div>
 
@@ -585,26 +800,26 @@ function Manager() {
                   name="remarks"
                   value={form.remarks}
                   onChange={handleChange}
+                  placeholder="Add any additional notes..."
                   rows={3}
-                  placeholder="Enter any remarks"
                   className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 resize-none"
-                />
+                ></textarea>
               </div>
 
-              {/* Modal Footer */}
-              <div className="flex items-center justify-end gap-3 pt-4">
+              {/* Form Actions */}
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-200">
                 <button
                   type="button"
                   onClick={closeModal}
-                  className="px-4 py-2.5 text-sm font-medium text-slate-600 bg-slate-100 rounded-lg hover:bg-slate-200 transition-colors"
+                  className="px-5 py-2.5 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2.5 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors"
+                  className="px-5 py-2.5 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors"
                 >
-                  {editId ? 'Update Manager' : 'Create Manager'}
+                  {editId ? 'Update Manager' : 'Add Manager'}
                 </button>
               </div>
             </form>
@@ -619,51 +834,34 @@ function Manager() {
             className="absolute inset-0 bg-black/50 backdrop-blur-sm"
             onClick={closeDeleteModal}
           ></div>
-          <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 overflow-hidden">
-            {/* Modal Content */}
-            <div className="p-6 text-center">
-              {/* Warning Icon */}
-              <div className="mx-auto w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
-                <AlertTriangle className="w-8 h-8 text-red-600" />
+          <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-6">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
+                <AlertTriangle className="w-6 h-6 text-red-600" />
               </div>
-
-              {/* Title */}
-              <h3 className="text-xl font-semibold text-slate-800 mb-2">
-                Delete Manager
-              </h3>
-
-              {/* Description */}
-              <p className="text-slate-500 mb-2">
-                Are you sure you want to delete this manager?
-              </p>
-
-              {/* Manager Name */}
-              <div className="bg-slate-100 rounded-lg px-4 py-3 mb-6">
-                <p className="text-sm text-slate-600">Manager Name</p>
-                <p className="font-semibold text-slate-800">
-                  {deleteModal.manager?.first_name} {deleteModal.manager?.last_name}
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-slate-800 mb-1">Delete Manager</h3>
+                <p className="text-sm text-slate-600 mb-4">
+                  Are you sure you want to delete{' '}
+                  <span className="font-medium">
+                    {deleteModal.manager?.first_name} {deleteModal.manager?.last_name}
+                  </span>
+                  ? This action cannot be undone.
                 </p>
-              </div>
-
-              {/* Warning Text */}
-              <p className="text-sm text-red-500 mb-6">
-                This action cannot be undone. All data associated with this manager will be permanently removed.
-              </p>
-
-              {/* Action Buttons */}
-              <div className="flex items-center justify-center gap-3">
-                <button
-                  onClick={closeDeleteModal}
-                  className="px-6 py-2.5 text-sm font-medium text-slate-600 bg-slate-100 rounded-lg hover:bg-slate-200 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={confirmDelete}
-                  className="px-6 py-2.5 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
-                >
-                  Delete Manager
-                </button>
+                <div className="flex items-center justify-end gap-3">
+                  <button
+                    onClick={closeDeleteModal}
+                    className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={confirmDelete}
+                    className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
+                  >
+                    Delete
+                  </button>
+                </div>
               </div>
             </div>
           </div>
