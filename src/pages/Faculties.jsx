@@ -14,8 +14,7 @@ import {
   Phone,
   Mail,
   Clock,
-  Calendar,
-  ChevronDown
+  Calendar
 } from 'lucide-react'
 
 const API = 'http://localhost:9998/faculties'
@@ -31,13 +30,19 @@ function Faculties() {
     last_name: '',
     mobile: '',
     email: '',
-    availability_of_days: [],
-    availability_of_time_in_range: [{ start: '', end: '' }],
+    availability: {
+      Monday: [],
+      Tuesday: [],
+      Wednesday: [],
+      Thursday: [],
+      Friday: [],
+      Saturday: [],
+      Sunday: [],
+    },
     remarks: '',
   })
   const [editId, setEditId] = useState(null)
   const [formErrors, setFormErrors] = useState({})
-  const [showDaysDropdown, setShowDaysDropdown] = useState(false)
 
   // Delete confirmation modal
   const [deleteModal, setDeleteModal] = useState({ isOpen: false, faculty: null })
@@ -91,18 +96,83 @@ function Faculties() {
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
       errors.email = 'Enter a valid email address'
     }
-    if (form.availability_of_days.length === 0) {
-      errors.availability_of_days = 'Select at least one day'
-    }
-    // Validate time ranges
-    const hasValidTimeRange = form.availability_of_time_in_range.some(
-      (range) => range.start && range.end
+    
+    // Check if at least one day has a time slot
+    const hasAnySlot = Object.values(form.availability).some(
+      (slots) => slots.length > 0 && slots.some((slot) => slot.start && slot.end)
     )
-    if (!hasValidTimeRange) {
-      errors.availability_of_time_in_range = 'Add at least one valid time range'
+    if (!hasAnySlot) {
+      errors.availability = 'Add at least one time slot for any day'
     }
+    
     setFormErrors(errors)
     return Object.keys(errors).length === 0
+  }
+
+  // Convert day-wise availability to API format
+  const convertToApiFormat = (dayWiseAvailability) => {
+    const days = []
+    const timeRanges = []
+    
+    Object.entries(dayWiseAvailability).forEach(([day, slots]) => {
+      if (slots.length > 0 && slots.some((slot) => slot.start && slot.end)) {
+        days.push(day)
+        // Add all valid time slots for this day
+        slots.forEach((slot) => {
+          if (slot.start && slot.end) {
+            timeRanges.push({ start: slot.start, end: slot.end })
+          }
+        })
+      }
+    })
+    
+    return { days, timeRanges }
+  }
+
+  // Convert API format to day-wise availability
+  const convertFromApiFormat = (days, timeRanges) => {
+    const availability = {
+      Monday: [],
+      Tuesday: [],
+      Wednesday: [],
+      Thursday: [],
+      Friday: [],
+      Saturday: [],
+      Sunday: [],
+    }
+    
+    // Parse if strings
+    let daysArray = days
+    let timeArray = timeRanges
+    
+    if (typeof days === 'string') {
+      try {
+        daysArray = JSON.parse(days)
+      } catch {
+        daysArray = []
+      }
+    }
+    if (typeof timeRanges === 'string') {
+      try {
+        timeArray = JSON.parse(timeRanges)
+      } catch {
+        timeArray = []
+      }
+    }
+    
+    if (!Array.isArray(daysArray) || !Array.isArray(timeArray)) {
+      return availability
+    }
+    
+    // Distribute time ranges across days (for now, apply same times to all days)
+    // This is a simple implementation - you may want to store day-specific times in DB
+    daysArray.forEach((day) => {
+      if (availability.hasOwnProperty(day)) {
+        availability[day] = timeArray.map((time) => ({ ...time }))
+      }
+    })
+    
+    return availability
   }
 
   // GET SINGLE FACULTY (for edit)
@@ -112,35 +182,17 @@ function Faculties() {
       let data = res.data.data || res.data
       if (Array.isArray(data)) data = data[0]
 
-      // Parse availability data
-      let availabilityDays = data.availability_of_days || []
-      let availabilityTime = data.availability_of_time_in_range || [{ start: '', end: '' }]
-
-      // Handle string JSON
-      if (typeof availabilityDays === 'string') {
-        try {
-          availabilityDays = JSON.parse(availabilityDays)
-        } catch {
-          availabilityDays = []
-        }
-      }
-      if (typeof availabilityTime === 'string') {
-        try {
-          availabilityTime = JSON.parse(availabilityTime)
-        } catch {
-          availabilityTime = [{ start: '', end: '' }]
-        }
-      }
+      const availability = convertFromApiFormat(
+        data.availability_of_days,
+        data.availability_of_time_in_range
+      )
 
       setForm({
         first_name: data.first_name || '',
         last_name: data.last_name || '',
         mobile: data.mobile || '',
         email: data.email || '',
-        availability_of_days: Array.isArray(availabilityDays) ? availabilityDays : [],
-        availability_of_time_in_range: Array.isArray(availabilityTime) && availabilityTime.length > 0
-          ? availabilityTime
-          : [{ start: '', end: '' }],
+        availability,
         remarks: data.remarks || '',
       })
       setEditId(data.id || id)
@@ -161,41 +213,28 @@ function Faculties() {
     }
   }
 
-  // Handle day selection
-  const toggleDay = (day) => {
-    const newDays = form.availability_of_days.includes(day)
-      ? form.availability_of_days.filter((d) => d !== day)
-      : [...form.availability_of_days, day]
-    setForm({ ...form, availability_of_days: newDays })
-    if (formErrors.availability_of_days) {
-      setFormErrors({ ...formErrors, availability_of_days: '' })
+  // Handle time slot changes for a specific day
+  const handleTimeSlotChange = (day, index, field, value) => {
+    const newAvailability = { ...form.availability }
+    newAvailability[day][index] = { ...newAvailability[day][index], [field]: value }
+    setForm({ ...form, availability: newAvailability })
+    if (formErrors.availability) {
+      setFormErrors({ ...formErrors, availability: '' })
     }
   }
 
-  // Handle time range changes
-  const handleTimeRangeChange = (index, field, value) => {
-    const newRanges = [...form.availability_of_time_in_range]
-    newRanges[index] = { ...newRanges[index], [field]: value }
-    setForm({ ...form, availability_of_time_in_range: newRanges })
-    if (formErrors.availability_of_time_in_range) {
-      setFormErrors({ ...formErrors, availability_of_time_in_range: '' })
-    }
+  // Add time slot for a specific day
+  const addTimeSlot = (day) => {
+    const newAvailability = { ...form.availability }
+    newAvailability[day] = [...newAvailability[day], { start: '', end: '' }]
+    setForm({ ...form, availability: newAvailability })
   }
 
-  // Add time range
-  const addTimeRange = () => {
-    setForm({
-      ...form,
-      availability_of_time_in_range: [...form.availability_of_time_in_range, { start: '', end: '' }],
-    })
-  }
-
-  // Remove time range
-  const removeTimeRange = (index) => {
-    if (form.availability_of_time_in_range.length > 1) {
-      const newRanges = form.availability_of_time_in_range.filter((_, i) => i !== index)
-      setForm({ ...form, availability_of_time_in_range: newRanges })
-    }
+  // Remove time slot for a specific day
+  const removeTimeSlot = (day, index) => {
+    const newAvailability = { ...form.availability }
+    newAvailability[day] = newAvailability[day].filter((_, i) => i !== index)
+    setForm({ ...form, availability: newAvailability })
   }
 
   // CREATE / UPDATE
@@ -204,18 +243,15 @@ function Faculties() {
     if (!validateForm()) return
 
     try {
-      // Filter out empty time ranges
-      const validTimeRanges = form.availability_of_time_in_range.filter(
-        (range) => range.start && range.end
-      )
+      const { days, timeRanges } = convertToApiFormat(form.availability)
 
       const payload = {
         first_name: form.first_name,
         last_name: form.last_name,
         mobile: form.mobile,
         email: form.email,
-        availability_of_days: form.availability_of_days,
-        availability_of_time_in_range: validTimeRanges,
+        availability_of_days: days,
+        availability_of_time_in_range: timeRanges,
         remarks: form.remarks,
       }
 
@@ -276,8 +312,15 @@ function Faculties() {
       last_name: '',
       mobile: '',
       email: '',
-      availability_of_days: [],
-      availability_of_time_in_range: [{ start: '', end: '' }],
+      availability: {
+        Monday: [],
+        Tuesday: [],
+        Wednesday: [],
+        Thursday: [],
+        Friday: [],
+        Saturday: [],
+        Sunday: [],
+      },
       remarks: '',
     })
     setEditId(null)
@@ -292,13 +335,19 @@ function Faculties() {
       last_name: '',
       mobile: '',
       email: '',
-      availability_of_days: [],
-      availability_of_time_in_range: [{ start: '', end: '' }],
+      availability: {
+        Monday: [],
+        Tuesday: [],
+        Wednesday: [],
+        Thursday: [],
+        Friday: [],
+        Saturday: [],
+        Sunday: [],
+      },
       remarks: '',
     })
     setEditId(null)
     setFormErrors({})
-    setShowDaysDropdown(false)
   }
 
   // Format availability for display
@@ -564,7 +613,7 @@ function Faculties() {
             className="absolute inset-0 bg-black/50 backdrop-blur-sm"
             onClick={closeModal}
           ></div>
-          <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 overflow-hidden max-h-[90vh] overflow-y-auto">
+          <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-2xl mx-4 overflow-hidden max-h-[90vh] overflow-y-auto">
             {/* Modal Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 sticky top-0 bg-white z-10">
               <h2 className="text-lg font-semibold text-slate-800">
@@ -667,94 +716,65 @@ function Faculties() {
                 )}
               </div>
 
-              {/* Availability Days */}
+              {/* Day-wise Availability */}
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                  Available Days <span className="text-red-500">*</span>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Availability Schedule <span className="text-red-500">*</span>
                 </label>
-                <div className="relative">
-                  <button
-                    type="button"
-                    onClick={() => setShowDaysDropdown(!showDaysDropdown)}
-                    className={`w-full px-4 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-1 text-left flex items-center justify-between ${
-                      formErrors.availability_of_days
-                        ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
-                        : 'border-slate-200 focus:border-primary-500 focus:ring-primary-500'
-                    }`}
-                  >
-                    <span className={form.availability_of_days.length > 0 ? 'text-slate-800' : 'text-slate-400'}>
-                      {form.availability_of_days.length > 0
-                        ? form.availability_of_days.join(', ')
-                        : 'Select available days'}
-                    </span>
-                    <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${showDaysDropdown ? 'rotate-180' : ''}`} />
-                  </button>
-                  {showDaysDropdown && (
-                    <div className="absolute z-20 w-full mt-1 bg-white border border-slate-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
-                      {DAYS_OF_WEEK.map((day) => (
-                        <label
-                          key={day}
-                          className="flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 cursor-pointer"
-                        >
-                          <input
-                            type="checkbox"
-                            checked={form.availability_of_days.includes(day)}
-                            onChange={() => toggleDay(day)}
-                            className="w-4 h-4 text-primary-600 border-slate-300 rounded focus:ring-primary-500"
-                          />
-                          <span className="text-sm text-slate-700">{day}</span>
-                        </label>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                {formErrors.availability_of_days && (
-                  <p className="mt-1 text-xs text-red-500">{formErrors.availability_of_days}</p>
-                )}
-              </div>
-
-              {/* Availability Time Ranges */}
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                  Available Time Slots <span className="text-red-500">*</span>
-                </label>
-                <div className="space-y-2">
-                  {form.availability_of_time_in_range.map((range, index) => (
-                    <div key={index} className="flex items-center gap-2">
-                      <input
-                        type="time"
-                        value={range.start}
-                        onChange={(e) => handleTimeRangeChange(index, 'start', e.target.value)}
-                        className="flex-1 px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
-                      />
-                      <span className="text-slate-400">to</span>
-                      <input
-                        type="time"
-                        value={range.end}
-                        onChange={(e) => handleTimeRangeChange(index, 'end', e.target.value)}
-                        className="flex-1 px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
-                      />
-                      {form.availability_of_time_in_range.length > 1 && (
+                <div className="space-y-4 border border-slate-200 rounded-lg p-4 max-h-96 overflow-y-auto">
+                  {DAYS_OF_WEEK.map((day) => (
+                    <div key={day} className="bg-slate-50 rounded-lg p-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <h4 className="text-sm font-medium text-slate-700">{day}</h4>
                         <button
                           type="button"
-                          onClick={() => removeTimeRange(index)}
-                          className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                          onClick={() => addTimeSlot(day)}
+                          className="text-xs text-primary-600 hover:text-primary-700 font-medium"
                         >
-                          <X className="w-4 h-4" />
+                          + Add Slot
                         </button>
-                      )}
+                      </div>
+                      <div className="space-y-2">
+                        {form.availability[day].length > 0 ? (
+                          form.availability[day].map((slot, index) => (
+                            <div key={index} className="flex items-center gap-2">
+                              <input
+                                type="time"
+                                value={slot.start}
+                                onChange={(e) =>
+                                  handleTimeSlotChange(day, index, 'start', e.target.value)
+                                }
+                                className="flex-1 px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 bg-white"
+                              />
+                              <span className="text-slate-400 text-sm">to</span>
+                              <input
+                                type="time"
+                                value={slot.end}
+                                onChange={(e) =>
+                                  handleTimeSlotChange(day, index, 'end', e.target.value)
+                                }
+                                className="flex-1 px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 bg-white"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => removeTimeSlot(day, index)}
+                                className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            </div>
+                          ))
+                        ) : (
+                          <p className="text-xs text-slate-400 text-center py-2">
+                            No slots added for this day
+                          </p>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
-                <button
-                  type="button"
-                  onClick={addTimeRange}
-                  className="mt-2 text-sm text-primary-600 hover:text-primary-700 font-medium"
-                >
-                  + Add another time slot
-                </button>
-                {formErrors.availability_of_time_in_range && (
-                  <p className="mt-1 text-xs text-red-500">{formErrors.availability_of_time_in_range}</p>
+                {formErrors.availability && (
+                  <p className="mt-1 text-xs text-red-500">{formErrors.availability}</p>
                 )}
               </div>
 
