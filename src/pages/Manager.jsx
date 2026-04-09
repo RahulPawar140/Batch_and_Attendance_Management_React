@@ -116,10 +116,17 @@ function Manager() {
       let data = res.data.data || res.data
       if (Array.isArray(data)) data = data[0]
 
+      console.log('[v0] Edit manager data:', data)
+      console.log('[v0] branch_id from API:', data.branch_id, 'type:', typeof data.branch_id)
+      console.log('[v0] Available branches:', branches.map(b => ({ id: b.id, type: typeof b.id })))
+
+      const branchIdStr = data.branch_id !== undefined && data.branch_id !== null ? String(data.branch_id) : ''
+      console.log('[v0] Setting branch_id to:', branchIdStr)
+
       setForm({
         first_name: data.first_name || '',
         last_name: data.last_name || '',
-        branch_id: data.branch_id ? String(data.branch_id) : '',
+        branch_id: branchIdStr,
         mobile: data.mobile || '',
         email: data.email || '',
         remarks: data.remarks || '',
@@ -535,11 +542,16 @@ function Manager() {
                     } rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent`}
                   >
                     <option value="">Select Branch</option>
-                    {branches.map((branch) => (
-                      <option key={branch.id} value={String(branch.id)}>
-                        {branch.branch_with_location || `${branch.name} - ${branch.location}`}
-                      </option>
-                    ))}
+                    {branches.map((branch) => {
+                      const branchValue = String(branch.id)
+                      const isSelected = form.branch_id === branchValue
+                      console.log('[v0] Branch option:', branchValue, 'form.branch_id:', form.branch_id, 'match:', isSelected)
+                      return (
+                        <option key={branch.id} value={branchValue}>
+                          {branch.branch_with_location || `${branch.name} - ${branch.location}`}
+                        </option>
+                      )
+                    })}
                   </select>
                   {formErrors.branch_id && (
                     <p className="mt-1 text-xs text-red-600">{formErrors.branch_id}</p>

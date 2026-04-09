@@ -30,7 +30,6 @@ function Students() {
     alternate_mobile: '',
     dob: '',
     email: '',
-    remarks: '',
   })
   const [editId, setEditId] = useState(null)
   const [formErrors, setFormErrors] = useState({})
@@ -108,7 +107,6 @@ function Students() {
         alternate_mobile: data.alternate_mobile || '',
         dob: data.dob ? data.dob.split('T')[0] : '',
         email: data.email || data.email_address || '',
-        remarks: data.remarks || '',
       })
       setEditId(data.id || id)
       setFormErrors({})
@@ -141,7 +139,6 @@ function Students() {
         alternate_mobile: form.alternate_mobile,
         dob: form.dob,
         email: form.email,
-        remarks: form.remarks,
       }
 
       if (editId) {
@@ -203,7 +200,6 @@ function Students() {
       alternate_mobile: '',
       dob: '',
       email: '',
-      remarks: '',
     })
     setEditId(null)
     setFormErrors({})
@@ -219,7 +215,6 @@ function Students() {
       alternate_mobile: '',
       dob: '',
       email: '',
-      remarks: '',
     })
     setEditId(null)
     setFormErrors({})
@@ -336,9 +331,6 @@ function Students() {
                 <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
                   Date of Birth
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                  Remarks
-                </th>
                 <th className="px-6 py-4 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">
                   Actions
                 </th>
@@ -347,7 +339,7 @@ function Students() {
             <tbody className="divide-y divide-slate-100">
               {loading ? (
                 <tr>
-                  <td colSpan="7" className="px-6 py-12 text-center text-slate-500">
+                  <td colSpan="6" className="px-6 py-12 text-center text-slate-500">
                     <div className="flex items-center justify-center gap-2">
                       <div className="w-5 h-5 border-2 border-primary-600 border-t-transparent rounded-full animate-spin"></div>
                       Loading...
@@ -404,9 +396,6 @@ function Students() {
                         {formatDate(student.dob)}
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-sm text-slate-500 max-w-xs truncate">
-                      {student.remarks || '-'}
-                    </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center justify-end gap-2">
                         <button
@@ -429,7 +418,7 @@ function Students() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan="7" className="px-6 py-12 text-center text-slate-500">
+                  <td colSpan="6" className="px-6 py-12 text-center text-slate-500">
                     No students found. Add your first student!
                   </td>
                 </tr>
@@ -609,20 +598,6 @@ function Students() {
                   value={form.dob}
                   onChange={handleChange}
                   className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                  Remarks
-                </label>
-                <textarea
-                  name="remarks"
-                  value={form.remarks}
-                  onChange={handleChange}
-                  rows={3}
-                  placeholder="Enter remarks (optional)"
-                  className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 resize-none"
                 />
               </div>
 
