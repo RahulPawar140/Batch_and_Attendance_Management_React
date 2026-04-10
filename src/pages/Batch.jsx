@@ -101,13 +101,31 @@ function Batch() {
         axios.get(`${FACULTIES_API}/get_faculty_list`)
       ])
 
-      const coursesData = coursesRes.data.data || coursesRes.data
-      const managersData = managersRes.data.data || managersRes.data
-      const facultiesData = facultiesRes.data.data || facultiesRes.data
+      console.log('[v0] Courses response:', coursesRes.data)
+      console.log('[v0] Managers response:', managersRes.data)
+      console.log('[v0] Faculties response:', facultiesRes.data)
 
-      setCourses(Array.isArray(coursesData) ? coursesData : [])
-      setManagers(Array.isArray(managersData) ? managersData : [])
-      setFaculties(Array.isArray(facultiesData) ? facultiesData : [])
+      // Handle nested data structures - check for data.data, data.rows, or direct array
+      const extractData = (response) => {
+        const d = response.data
+        if (Array.isArray(d)) return d
+        if (d?.data && Array.isArray(d.data)) return d.data
+        if (d?.rows && Array.isArray(d.rows)) return d.rows
+        if (d?.result && Array.isArray(d.result)) return d.result
+        return []
+      }
+
+      const coursesData = extractData(coursesRes)
+      const managersData = extractData(managersRes)
+      const facultiesData = extractData(facultiesRes)
+
+      console.log('[v0] Extracted courses:', coursesData)
+      console.log('[v0] Extracted managers:', managersData)
+      console.log('[v0] Extracted faculties:', facultiesData)
+
+      setCourses(coursesData)
+      setManagers(managersData)
+      setFaculties(facultiesData)
     } catch (err) {
       console.error('Failed to fetch dropdown data:', err)
     }
@@ -159,10 +177,23 @@ function Batch() {
         axios.get(`${FACULTIES_API}/get_faculty_list`)
       ])
 
+      // Handle nested data structures
+      const extractData = (response) => {
+        const d = response.data
+        if (Array.isArray(d)) return d
+        if (d?.data && Array.isArray(d.data)) return d.data
+        if (d?.rows && Array.isArray(d.rows)) return d.rows
+        if (d?.result && Array.isArray(d.result)) return d.result
+        return []
+      }
+
+      console.log('[v0] Edit - Managers response:', managersRes.data)
+      console.log('[v0] Edit - Faculties response:', facultiesRes.data)
+
       // Set dropdowns FIRST
-      setCourses(coursesRes.data.data || coursesRes.data || [])
-      setManagers(managersRes.data.data || managersRes.data || [])
-      setFaculties(facultiesRes.data.data || facultiesRes.data || [])
+      setCourses(extractData(coursesRes))
+      setManagers(extractData(managersRes))
+      setFaculties(extractData(facultiesRes))
 
       let data = batchRes.data.data || batchRes.data
       if (Array.isArray(data)) data = data[0]
