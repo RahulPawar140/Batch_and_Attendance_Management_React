@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import axios from 'axios'
+import { useEffect, useState } from "react";
+import axios from "axios";
 import {
   Plus,
   Search,
@@ -14,39 +14,42 @@ import {
   Phone,
   Mail,
   Calendar,
-  Hash
-} from 'lucide-react'
+  Hash,
+} from "lucide-react";
 
-const API = 'http://localhost:9998/students'
+const API = "http://localhost:9998/students";
 
 function Students() {
-  const [students, setStudents] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [students, setStudents] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [form, setForm] = useState({
-    first_name: '',
-    last_name: '',
-    mobile: '',
-    alternate_mobile: '',
-    dob: '',
-    email: '',
-  })
-  const [editId, setEditId] = useState(null)
-  const [formErrors, setFormErrors] = useState({})
+    first_name: "",
+    last_name: "",
+    mobile: "",
+    alternate_mobile: "",
+    dob: "",
+    email: "",
+  });
+  const [editId, setEditId] = useState(null);
+  const [formErrors, setFormErrors] = useState({});
 
   // Delete confirmation modal
-  const [deleteModal, setDeleteModal] = useState({ isOpen: false, student: null })
+  const [deleteModal, setDeleteModal] = useState({
+    isOpen: false,
+    student: null,
+  });
 
   // Filter states
-  const [pageSize, setPageSize] = useState(5)
-  const [pageIndex, setPageIndex] = useState(1)
-  const [sortBy, setSortBy] = useState('id')
-  const [sortOrder, setSortOrder] = useState('ASC')
-  const [searchText, setSearchText] = useState('')
+  const [pageSize, setPageSize] = useState(5);
+  const [pageIndex, setPageIndex] = useState(1);
+  const [sortBy, setSortBy] = useState("id");
+  const [sortOrder, setSortOrder] = useState("ASC");
+  const [searchText, setSearchText] = useState("");
 
   // GET ALL STUDENTS
   const fetchStudents = async () => {
-    setLoading(true)
+    setLoading(true);
     try {
       const res = await axios.get(`${API}/get_student_list`, {
         params: {
@@ -56,80 +59,83 @@ function Students() {
           sort_order: sortOrder,
           search_text: searchText,
         },
-      })
-      const data = res.data.data || res.data
-      setStudents(Array.isArray(data) ? data : [])
+      });
+      const data = res.data.data || res.data;
+      setStudents(Array.isArray(data) ? data : []);
     } catch (err) {
-      console.error('Fetch error:', err)
-      setStudents([])
+      console.error("Fetch error:", err);
+      setStudents([]);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   useEffect(() => {
-    fetchStudents()
-  }, [pageIndex, pageSize, sortBy, sortOrder])
+    fetchStudents();
+  }, [pageIndex, pageSize, sortBy, sortOrder]);
 
   // Validate form
   const validateForm = () => {
-    const errors = {}
-    if (!form.first_name.trim()) errors.first_name = 'First name is required'
-    if (!form.last_name.trim()) errors.last_name = 'Last name is required'
+    const errors = {};
+    if (!form.first_name.trim()) errors.first_name = "First name is required";
+    if (!form.last_name.trim()) errors.last_name = "Last name is required";
     if (!form.mobile.trim()) {
-      errors.mobile = 'Mobile number is required'
+      errors.mobile = "Mobile number is required";
     } else if (!/^[0-9]{10,11}$/.test(form.mobile)) {
-      errors.mobile = 'Enter a valid mobile number'
+      errors.mobile = "Enter a valid mobile number";
     }
-    if (form.alternate_mobile && !/^[0-9]{10,11}$/.test(form.alternate_mobile)) {
-      errors.alternate_mobile = 'Enter a valid mobile number'
+    if (
+      form.alternate_mobile &&
+      !/^[0-9]{10,11}$/.test(form.alternate_mobile)
+    ) {
+      errors.alternate_mobile = "Enter a valid mobile number";
     }
     if (!form.email.trim()) {
-      errors.email = 'Email is required'
+      errors.email = "Email is required";
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
-      errors.email = 'Enter a valid email address'
+      errors.email = "Enter a valid email address";
     }
-    setFormErrors(errors)
-    return Object.keys(errors).length === 0
-  }
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
 
   // GET SINGLE STUDENT (for edit)
   const handleEdit = async (id) => {
     try {
-      const res = await axios.get(`${API}/get_student/${id}`)
-      let data = res.data.data || res.data
-      if (Array.isArray(data)) data = data[0]
+      const res = await axios.get(`${API}/get_student/${id}`);
+      let data = res.data.data || res.data;
+      if (Array.isArray(data)) data = data[0];
 
       setForm({
-        first_name: data.first_name || '',
-        last_name: data.last_name || '',
-        mobile: data.mobile || '',
-        alternate_mobile: data.alternate_mobile || '',
-        dob: data.dob ? data.dob.split('T')[0] : '',
-        email: data.email || data.email_address || '',
-      })
-      setEditId(data.id || id)
-      setFormErrors({})
-      setIsModalOpen(true)
+        first_name: data.first_name || "",
+        last_name: data.last_name || "",
+        mobile: data.mobile || "",
+        alternate_mobile: data.alternate_mobile || "",
+        dob: data.dob ? data.dob.split("T")[0] : "",
+        email: data.email || data.email_address || "",
+      });
+      setEditId(data.id || id);
+      setFormErrors({});
+      setIsModalOpen(true);
     } catch (err) {
-      console.error('Edit fetch error:', err)
-      alert('Failed to fetch student details')
+      console.error("Edit fetch error:", err);
+      alert("Failed to fetch student details");
     }
-  }
+  };
 
   // HANDLE INPUT
   const handleChange = (e) => {
-    const { name, value } = e.target
-    setForm({ ...form, [name]: value })
+    const { name, value } = e.target;
+    setForm({ ...form, [name]: value });
     if (formErrors[name]) {
-      setFormErrors({ ...formErrors, [name]: '' })
+      setFormErrors({ ...formErrors, [name]: "" });
     }
-  }
+  };
 
   // CREATE / UPDATE
   const handleSubmit = async (e) => {
-    e.preventDefault()
-    if (!validateForm()) return
+    e.preventDefault();
+    if (!validateForm()) return;
 
     try {
       const payload = {
@@ -139,104 +145,106 @@ function Students() {
         alternate_mobile: form.alternate_mobile,
         dob: form.dob,
         email: form.email,
-      }
+      };
 
       if (editId) {
-        await axios.put(`${API}/update_student`, { id: editId, ...payload })
+        await axios.put(`${API}/update_student`, { id: editId, ...payload });
       } else {
-        await axios.post(`${API}/create_student`, payload)
+        await axios.post(`${API}/create_student`, payload);
       }
-      closeModal()
-      fetchStudents()
+      closeModal();
+      fetchStudents();
     } catch (err) {
-      console.error('Submit error:', err)
-      alert('Failed to save student')
+      console.error("Submit error:", err);
+      alert("Failed to save student");
     }
-  }
+  };
 
   // DELETE - Open confirmation modal
   const openDeleteModal = (student) => {
-    setDeleteModal({ isOpen: true, student })
-  }
+    setDeleteModal({ isOpen: true, student });
+  };
 
   const closeDeleteModal = () => {
-    setDeleteModal({ isOpen: false, student: null })
-  }
+    setDeleteModal({ isOpen: false, student: null });
+  };
 
   const confirmDelete = async () => {
-    if (!deleteModal.student) return
+    if (!deleteModal.student) return;
     try {
-      await axios.delete(`${API}/delete_student/${deleteModal.student.id}`)
-      closeDeleteModal()
-      fetchStudents()
+      await axios.delete(`${API}/delete_student/${deleteModal.student.id}`);
+      closeDeleteModal();
+      fetchStudents();
     } catch (err) {
-      console.error('Delete error:', err)
-      alert('Failed to delete student')
+      console.error("Delete error:", err);
+      alert("Failed to delete student");
     }
-  }
+  };
 
   // SEARCH
   const handleSearch = () => {
-    setPageIndex(1)
-    fetchStudents()
-  }
+    setPageIndex(1);
+    fetchStudents();
+  };
 
   // SORT
   const handleSort = (column) => {
     if (sortBy === column) {
-      setSortOrder(sortOrder === 'ASC' ? 'DESC' : 'ASC')
+      setSortOrder(sortOrder === "ASC" ? "DESC" : "ASC");
     } else {
-      setSortBy(column)
-      setSortOrder('ASC')
+      setSortBy(column);
+      setSortOrder("ASC");
     }
-  }
+  };
 
   // MODAL HANDLERS
   const openCreateModal = () => {
     setForm({
-      first_name: '',
-      last_name: '',
-      mobile: '',
-      alternate_mobile: '',
-      dob: '',
-      email: '',
-    })
-    setEditId(null)
-    setFormErrors({})
-    setIsModalOpen(true)
-  }
+      first_name: "",
+      last_name: "",
+      mobile: "",
+      alternate_mobile: "",
+      dob: "",
+      email: "",
+    });
+    setEditId(null);
+    setFormErrors({});
+    setIsModalOpen(true);
+  };
 
   const closeModal = () => {
-    setIsModalOpen(false)
+    setIsModalOpen(false);
     setForm({
-      first_name: '',
-      last_name: '',
-      mobile: '',
-      alternate_mobile: '',
-      dob: '',
-      email: '',
-    })
-    setEditId(null)
-    setFormErrors({})
-  }
+      first_name: "",
+      last_name: "",
+      mobile: "",
+      alternate_mobile: "",
+      dob: "",
+      email: "",
+    });
+    setEditId(null);
+    setFormErrors({});
+  };
 
   // Format date for display
   const formatDate = (dateString) => {
-    if (!dateString) return '-'
-    const date = new Date(dateString)
-    return date.toLocaleDateString('en-IN', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-    })
-  }
+    if (!dateString) return "-";
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+  };
 
   return (
     <div className="space-y-6 min-w-0">
       {/* Page Header */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="min-w-0">
-          <h1 className="text-2xl font-bold text-slate-800">Student Management</h1>
+          <h1 className="text-2xl font-bold text-slate-800">
+            Student Management
+          </h1>
           <p className="text-slate-500 mt-1">Manage your institute students</p>
         </div>
         <button
@@ -259,7 +267,7 @@ function Students() {
               placeholder="Search students..."
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+              onKeyDown={(e) => e.key === "Enter" && handleSearch()}
               className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
             />
           </div>
@@ -293,39 +301,59 @@ function Students() {
             <thead>
               <tr className="bg-slate-50 border-b border-slate-200">
                 <th
-                  onClick={() => handleSort('first_name')}
+                  onClick={() => handleSort("first_name")}
                   className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider cursor-pointer hover:bg-slate-100 transition-colors"
                 >
                   <div className="flex items-center gap-2">
                     Student
-                    <ArrowUpDown className={`w-4 h-4 ${sortBy === 'first_name' ? 'text-primary-600' : 'text-slate-400'}`} />
+                    <ArrowUpDown
+                      className={`w-4 h-4 ${sortBy === "first_name"
+                        ? "text-primary-600"
+                        : "text-slate-400"
+                        }`}
+                    />
                   </div>
                 </th>
                 <th
-                  onClick={() => handleSort('roll_no')}
+                  onClick={() => handleSort("roll_no")}
                   className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider cursor-pointer hover:bg-slate-100 transition-colors"
                 >
                   <div className="flex items-center gap-2">
                     Roll No
-                    <ArrowUpDown className={`w-4 h-4 ${sortBy === 'roll_no' ? 'text-primary-600' : 'text-slate-400'}`} />
+                    <ArrowUpDown
+                      className={`w-4 h-4 ${sortBy === "roll_no"
+                        ? "text-primary-600"
+                        : "text-slate-400"
+                        }`}
+                    />
                   </div>
                 </th>
                 <th
-                  onClick={() => handleSort('email')}
+                  onClick={() => handleSort("email")}
                   className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider cursor-pointer hover:bg-slate-100 transition-colors"
                 >
                   <div className="flex items-center gap-2">
                     Email
-                    <ArrowUpDown className={`w-4 h-4 ${sortBy === 'email' ? 'text-primary-600' : 'text-slate-400'}`} />
+                    <ArrowUpDown
+                      className={`w-4 h-4 ${sortBy === "email"
+                        ? "text-primary-600"
+                        : "text-slate-400"
+                        }`}
+                    />
                   </div>
                 </th>
                 <th
-                  onClick={() => handleSort('mobile')}
+                  onClick={() => handleSort("mobile")}
                   className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider cursor-pointer hover:bg-slate-100 transition-colors"
                 >
                   <div className="flex items-center gap-2">
                     Contact
-                    <ArrowUpDown className={`w-4 h-4 ${sortBy === 'mobile' ? 'text-primary-600' : 'text-slate-400'}`} />
+                    <ArrowUpDown
+                      className={`w-4 h-4 ${sortBy === "mobile"
+                        ? "text-primary-600"
+                        : "text-slate-400"
+                        }`}
+                    />
                   </div>
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
@@ -339,7 +367,10 @@ function Students() {
             <tbody className="divide-y divide-slate-100">
               {loading ? (
                 <tr>
-                  <td colSpan="6" className="px-6 py-12 text-center text-slate-500">
+                  <td
+                    colSpan="6"
+                    className="px-6 py-12 text-center text-slate-500"
+                  >
                     <div className="flex items-center justify-center gap-2">
                       <div className="w-5 h-5 border-2 border-primary-600 border-t-transparent rounded-full animate-spin"></div>
                       Loading...
@@ -348,7 +379,10 @@ function Students() {
                 </tr>
               ) : students.length > 0 ? (
                 students.map((student) => (
-                  <tr key={student.id} className="hover:bg-slate-50 transition-colors">
+                  <tr
+                    key={student.id}
+                    className="hover:bg-slate-50 transition-colors"
+                  >
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">
@@ -358,7 +392,9 @@ function Students() {
                           <span className="text-sm font-medium text-slate-800 block">
                             {student.first_name} {student.last_name}
                           </span>
-                          <span className="text-xs text-slate-500">ID: {student.id}</span>
+                          <span className="text-xs text-slate-500">
+                            ID: {student.id}
+                          </span>
                         </div>
                       </div>
                     </td>
@@ -366,7 +402,7 @@ function Students() {
                       <div className="flex items-center gap-2">
                         <Hash className="w-4 h-4 text-slate-400" />
                         <span className="text-sm font-medium text-slate-700">
-                          {student.roll_no || '-'}
+                          {student.roll_no || "-"}
                         </span>
                       </div>
                     </td>
@@ -418,7 +454,10 @@ function Students() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan="6" className="px-6 py-12 text-center text-slate-500">
+                  <td
+                    colSpan="6"
+                    className="px-6 py-12 text-center text-slate-500"
+                  >
                     No students found. Add your first student!
                   </td>
                 </tr>
@@ -467,7 +506,7 @@ function Students() {
             {/* Modal Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
               <h2 className="text-lg font-semibold text-slate-800">
-                {editId ? 'Edit Student' : 'Add New Student'}
+                {editId ? "Edit Student" : "Add New Student"}
               </h2>
               <button
                 onClick={closeModal}
@@ -488,16 +527,18 @@ function Students() {
                     type="text"
                     name="first_name"
                     value={form.first_name}
-                    onChange={handleChange}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/[^A-Za-z\s]/g, '')
+                      setForm({ ...form, first_name: value })
+                    }}
+                    className={`w-full px-4 py-2.5 border ${formErrors.first_name ? 'border-red-300' : 'border-slate-300'
+                      } rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500`}
                     placeholder="Enter first name"
-                    className={`w-full px-4 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-1 ${
-                      formErrors.first_name
-                        ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
-                        : 'border-slate-200 focus:border-primary-500 focus:ring-primary-500'
-                    }`}
                   />
                   {formErrors.first_name && (
-                    <p className="mt-1 text-xs text-red-500">{formErrors.first_name}</p>
+                    <p className="mt-1 text-xs text-red-500">
+                      {formErrors.first_name}
+                    </p>
                   )}
                 </div>
 
@@ -509,16 +550,18 @@ function Students() {
                     type="text"
                     name="last_name"
                     value={form.last_name}
-                    onChange={handleChange}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/[^A-Za-z\s]/g, '')
+                      setForm({ ...form, last_name: value })
+                    }}
+                    className={`w-full px-4 py-2.5 border ${formErrors.last_name ? 'border-red-300' : 'border-slate-300'
+                      } rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500`}
                     placeholder="Enter last name"
-                    className={`w-full px-4 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-1 ${
-                      formErrors.last_name
-                        ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
-                        : 'border-slate-200 focus:border-primary-500 focus:ring-primary-500'
-                    }`}
                   />
                   {formErrors.last_name && (
-                    <p className="mt-1 text-xs text-red-500">{formErrors.last_name}</p>
+                    <p className="mt-1 text-xs text-red-500">
+                      {formErrors.last_name}
+                    </p>
                   )}
                 </div>
               </div>
@@ -532,16 +575,23 @@ function Students() {
                     type="tel"
                     name="mobile"
                     value={form.mobile}
-                    onChange={handleChange}
-                    placeholder="Enter mobile number"
-                    className={`w-full px-4 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-1 ${
-                      formErrors.mobile
-                        ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
-                        : 'border-slate-200 focus:border-primary-500 focus:ring-primary-500'
-                    }`}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/\D/g, "");
+                      setForm({ ...form, mobile: value });
+                    }}
+                    disabled={!!editId}
+                    maxLength={10}
+                    className={`w-full px-4 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent ${formErrors.mobile ? "border-red-300" : "border-slate-300"
+                      } ${editId
+                        ? "bg-gray-100 cursor-not-allowed text-gray-500"
+                        : ""
+                      }`}
+                    placeholder="Enter 10-digit mobile number"
                   />
                   {formErrors.mobile && (
-                    <p className="mt-1 text-xs text-red-500">{formErrors.mobile}</p>
+                    <p className="mt-1 text-xs text-red-500">
+                      {formErrors.mobile}
+                    </p>
                   )}
                 </div>
 
@@ -553,16 +603,25 @@ function Students() {
                     type="tel"
                     name="alternate_mobile"
                     value={form.alternate_mobile}
-                    onChange={handleChange}
-                    placeholder="Enter alternate mobile"
-                    className={`w-full px-4 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-1 ${
-                      formErrors.alternate_mobile
-                        ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
-                        : 'border-slate-200 focus:border-primary-500 focus:ring-primary-500'
-                    }`}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/\D/g, '') // only numbers
+                      setForm({ ...form, alternate_mobile: value })
+                    }}
+                    disabled={!!editId}
+                    maxLength={10}
+                    className={`w-full px-4 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent ${formErrors.alternate_mobile
+                      ? 'border-red-300'
+                      : 'border-slate-300'
+                      } ${editId
+                        ? 'bg-gray-100 cursor-not-allowed text-gray-500'
+                        : ''
+                      }`}
+                    placeholder="Enter alternate mobile number"
                   />
                   {formErrors.alternate_mobile && (
-                    <p className="mt-1 text-xs text-red-500">{formErrors.alternate_mobile}</p>
+                    <p className="mt-1 text-xs text-red-500">
+                      {formErrors.alternate_mobile}
+                    </p>
                   )}
                 </div>
               </div>
@@ -577,14 +636,15 @@ function Students() {
                   value={form.email}
                   onChange={handleChange}
                   placeholder="Enter email address"
-                  className={`w-full px-4 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-1 ${
-                    formErrors.email
-                      ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
-                      : 'border-slate-200 focus:border-primary-500 focus:ring-primary-500'
-                  }`}
+                  className={`w-full px-4 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-1 ${formErrors.email
+                    ? "border-red-300 focus:border-red-500 focus:ring-red-500"
+                    : "border-slate-200 focus:border-primary-500 focus:ring-primary-500"
+                    }`}
                 />
                 {formErrors.email && (
-                  <p className="mt-1 text-xs text-red-500">{formErrors.email}</p>
+                  <p className="mt-1 text-xs text-red-500">
+                    {formErrors.email}
+                  </p>
                 )}
               </div>
 
@@ -614,7 +674,7 @@ function Students() {
                   type="submit"
                   className="px-4 py-2.5 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors"
                 >
-                  {editId ? 'Update Student' : 'Create Student'}
+                  {editId ? "Update Student" : "Create Student"}
                 </button>
               </div>
             </form>
@@ -651,13 +711,15 @@ function Students() {
               <div className="bg-slate-100 rounded-lg px-4 py-3 mb-6">
                 <p className="text-sm text-slate-600">Student Name</p>
                 <p className="font-semibold text-slate-800">
-                  {deleteModal.student?.first_name} {deleteModal.student?.last_name}
+                  {deleteModal.student?.first_name}{" "}
+                  {deleteModal.student?.last_name}
                 </p>
               </div>
 
               {/* Warning Text */}
               <p className="text-sm text-red-500 mb-6">
-                This action cannot be undone. All data associated with this student will be permanently removed.
+                This action cannot be undone. All data associated with this
+                student will be permanently removed.
               </p>
 
               {/* Action Buttons */}
@@ -680,7 +742,7 @@ function Students() {
         </div>
       )}
     </div>
-  )
+  );
 }
 
-export default Students
+export default Students;

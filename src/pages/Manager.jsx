@@ -104,7 +104,7 @@ function Manager() {
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
       errors.email = 'Enter a valid email address'
     }
-    
+
     setFormErrors(errors)
     return Object.keys(errors).length === 0
   }
@@ -164,7 +164,7 @@ function Manager() {
         email: form.email,
         remarks: form.remarks,
       }
-      
+
       if (editId) {
         await axios.put(`${API}/update_manager`, { id: editId, ...payload })
       } else {
@@ -488,7 +488,7 @@ function Manager() {
                 <h3 className="text-sm font-semibold text-slate-700 uppercase tracking-wide">
                   Personal Information
                 </h3>
-                
+
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1.5">
@@ -498,10 +498,12 @@ function Manager() {
                       type="text"
                       name="first_name"
                       value={form.first_name}
-                      onChange={handleChange}
-                      className={`w-full px-4 py-2.5 border ${
-                        formErrors.first_name ? 'border-red-300' : 'border-slate-300'
-                      } rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent`}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/[^A-Za-z\s]/g, '')
+                        setForm({ ...form, first_name: value })
+                      }}
+                      className={`w-full px-4 py-2.5 border ${formErrors.first_name ? 'border-red-300' : 'border-slate-300'
+                        } rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500`}
                       placeholder="Enter first name"
                     />
                     {formErrors.first_name && (
@@ -517,10 +519,12 @@ function Manager() {
                       type="text"
                       name="last_name"
                       value={form.last_name}
-                      onChange={handleChange}
-                      className={`w-full px-4 py-2.5 border ${
-                        formErrors.last_name ? 'border-red-300' : 'border-slate-300'
-                      } rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent`}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/[^A-Za-z\s]/g, '')
+                        setForm({ ...form, last_name: value })
+                      }}
+                      className={`w-full px-4 py-2.5 border ${formErrors.last_name ? 'border-red-300' : 'border-slate-300'
+                        } rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500`}
                       placeholder="Enter last name"
                     />
                     {formErrors.last_name && (
@@ -537,9 +541,8 @@ function Manager() {
                     name="branch_id"
                     value={form.branch_id}
                     onChange={handleChange}
-                    className={`w-full px-4 py-2.5 border ${
-                      formErrors.branch_id ? 'border-red-300' : 'border-slate-300'
-                    } rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent`}
+                    className={`w-full px-4 py-2.5 border ${formErrors.branch_id ? 'border-red-300' : 'border-slate-300'
+                      } rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent`}
                   >
                     <option value="">Select Branch</option>
                     {branches.map((branch) => {
@@ -564,7 +567,7 @@ function Manager() {
                 <h3 className="text-sm font-semibold text-slate-700 uppercase tracking-wide">
                   Contact Information
                 </h3>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1.5">
                     Mobile <span className="text-red-500">*</span>
@@ -573,10 +576,19 @@ function Manager() {
                     type="tel"
                     name="mobile"
                     value={form.mobile}
-                    onChange={handleChange}
-                    className={`w-full px-4 py-2.5 border ${
-                      formErrors.mobile ? 'border-red-300' : 'border-slate-300'
-                    } rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent`}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/\D/g, '') // only numbers
+                      setForm({ ...form, mobile: value })
+                    }}
+                    disabled={!!editId}
+                    maxLength={10}
+                    className={`w-full px-4 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent ${formErrors.mobile
+                      ? 'border-red-300'
+                      : 'border-slate-300'
+                      } ${editId
+                        ? 'bg-gray-100 cursor-not-allowed text-gray-500'
+                        : ''
+                      }`}
                     placeholder="Enter 10-digit mobile number"
                   />
                   {formErrors.mobile && (
@@ -593,9 +605,8 @@ function Manager() {
                     name="email"
                     value={form.email}
                     onChange={handleChange}
-                    className={`w-full px-4 py-2.5 border ${
-                      formErrors.email ? 'border-red-300' : 'border-slate-300'
-                    } rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent`}
+                    className={`w-full px-4 py-2.5 border ${formErrors.email ? 'border-red-300' : 'border-slate-300'
+                      } rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent`}
                     placeholder="Enter email address"
                   />
                   {formErrors.email && (
@@ -609,7 +620,7 @@ function Manager() {
                 <h3 className="text-sm font-semibold text-slate-700 uppercase tracking-wide">
                   Additional Information
                 </h3>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1.5">
                     Remarks

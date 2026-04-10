@@ -107,7 +107,7 @@ function Faculties() {
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
       errors.email = 'Enter a valid email address'
     }
-    
+
     // Check if at least one day has a time slot
     const hasAnySlot = Object.values(form.availability).some(
       (slots) => slots.length > 0 && slots.some((slot) => slot.start && slot.end)
@@ -115,7 +115,7 @@ function Faculties() {
     if (!hasAnySlot) {
       errors.availability = 'Add at least one time slot for any day'
     }
-    
+
     setFormErrors(errors)
     return Object.keys(errors).length === 0
   }
@@ -637,13 +637,13 @@ function Faculties() {
                     type="text"
                     name="first_name"
                     value={form.first_name}
-                    onChange={handleChange}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/[^A-Za-z\s]/g, '')
+                      setForm({ ...form, first_name: value })
+                    }}
+                    className={`w-full px-4 py-2.5 border ${formErrors.first_name ? 'border-red-300' : 'border-slate-300'
+                      } rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500`}
                     placeholder="Enter first name"
-                    className={`w-full px-4 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-1 ${
-                      formErrors.first_name
-                        ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
-                        : 'border-slate-200 focus:border-primary-500 focus:ring-primary-500'
-                    }`}
                   />
                   {formErrors.first_name && (
                     <p className="mt-1 text-xs text-red-500">{formErrors.first_name}</p>
@@ -658,13 +658,13 @@ function Faculties() {
                     type="text"
                     name="last_name"
                     value={form.last_name}
-                    onChange={handleChange}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/[^A-Za-z\s]/g, '')
+                      setForm({ ...form, last_name: value })
+                    }}
+                    className={`w-full px-4 py-2.5 border ${formErrors.last_name ? 'border-red-300' : 'border-slate-300'
+                      } rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500`}
                     placeholder="Enter last name"
-                    className={`w-full px-4 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-1 ${
-                      formErrors.last_name
-                        ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
-                        : 'border-slate-200 focus:border-primary-500 focus:ring-primary-500'
-                    }`}
                   />
                   {formErrors.last_name && (
                     <p className="mt-1 text-xs text-red-500">{formErrors.last_name}</p>
@@ -680,14 +680,20 @@ function Faculties() {
                   type="tel"
                   name="mobile"
                   value={form.mobile}
-                  onChange={handleChange}
-                  placeholder="Enter 10-digit mobile number"
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/\D/g, '') // only numbers
+                    setForm({ ...form, mobile: value })
+                  }}
+                  disabled={!!editId}
                   maxLength={10}
-                  className={`w-full px-4 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-1 ${
-                    formErrors.mobile
-                      ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
-                      : 'border-slate-200 focus:border-primary-500 focus:ring-primary-500'
-                  }`}
+                  className={`w-full px-4 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent ${formErrors.mobile
+                    ? 'border-red-300'
+                    : 'border-slate-300'
+                    } ${editId
+                      ? 'bg-gray-100 cursor-not-allowed text-gray-500'
+                      : ''
+                    }`}
+                  placeholder="Enter 10-digit mobile number"
                 />
                 {formErrors.mobile && (
                   <p className="mt-1 text-xs text-red-500">{formErrors.mobile}</p>
@@ -704,11 +710,10 @@ function Faculties() {
                   value={form.email}
                   onChange={handleChange}
                   placeholder="Enter email address"
-                  className={`w-full px-4 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-1 ${
-                    formErrors.email
-                      ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
-                      : 'border-slate-200 focus:border-primary-500 focus:ring-primary-500'
-                  }`}
+                  className={`w-full px-4 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-1 ${formErrors.email
+                    ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
+                    : 'border-slate-200 focus:border-primary-500 focus:ring-primary-500'
+                    }`}
                 />
                 {formErrors.email && (
                   <p className="mt-1 text-xs text-red-500">{formErrors.email}</p>
