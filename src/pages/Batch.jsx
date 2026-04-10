@@ -108,10 +108,17 @@ function Batch() {
       // Handle nested data structures - check for data.data, data.rows, or direct array
       const extractData = (response) => {
         const d = response.data
+        console.log('[v0] Extracting from:', d, 'keys:', Object.keys(d || {}))
         if (Array.isArray(d)) return d
         if (d?.data && Array.isArray(d.data)) return d.data
         if (d?.rows && Array.isArray(d.rows)) return d.rows
         if (d?.result && Array.isArray(d.result)) return d.result
+        if (d?.manager_list && Array.isArray(d.manager_list)) return d.manager_list
+        if (d?.faculty_list && Array.isArray(d.faculty_list)) return d.faculty_list
+        if (d?.course_list && Array.isArray(d.course_list)) return d.course_list
+        if (d?.managers && Array.isArray(d.managers)) return d.managers
+        if (d?.faculties && Array.isArray(d.faculties)) return d.faculties
+        if (d?.courses && Array.isArray(d.courses)) return d.courses
         return []
       }
 
