@@ -267,22 +267,6 @@ function Batch() {
     setEditId(null)
   }
 
-  // Helper functions for displaying names
-  const getCourseName = (courseId) => {
-    const course = courses.find(c => c.id === courseId)
-    return course?.name || '-'
-  }
-
-  const getManagerName = (managerId) => {
-    const manager = managers.find(m => m.id === managerId)
-    return manager?.name || '-'
-  }
-
-  const getFacultyName = (facultyId) => {
-    const faculty = faculties.find(f => f.id === facultyId)
-    return faculty?.name || '-'
-  }
-
   const formatDate = (dateStr) => {
     if (!dateStr) return '-'
     return new Date(dateStr).toLocaleDateString('en-US', {
@@ -459,13 +443,13 @@ function Batch() {
                       </div>
                     </td>
                     <td className="px-4 py-4 text-sm text-slate-600">
-                      {getCourseName(batch.course_id)}
+                      {batch.course_name || '-'}
                     </td>
                     <td className="px-4 py-4 text-sm text-slate-600">
-                      {getManagerName(batch.manager_id)}
+                      {batch.manager_name || '-'}
                     </td>
                     <td className="px-4 py-4 text-sm text-slate-600">
-                      {getFacultyName(batch.faculty_id)}
+                      {batch.faculty_name || '-'}
                     </td>
                     <td className="px-4 py-4">
                       <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium capitalize ${statusColors[batch.batch_status] || 'bg-slate-100 text-slate-600'}`}>
