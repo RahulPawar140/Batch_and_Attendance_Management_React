@@ -101,38 +101,9 @@ function Batch() {
         axios.get(`${FACULTIES_API}/get_faculty_list`)
       ])
 
-      console.log('[v0] Courses response:', coursesRes.data)
-      console.log('[v0] Managers response:', managersRes.data)
-      console.log('[v0] Faculties response:', facultiesRes.data)
-
-      // Handle nested data structures - check for data.data, data.rows, or direct array
-      const extractData = (response) => {
-        const d = response.data
-        console.log('[v0] Extracting from:', d, 'keys:', Object.keys(d || {}))
-        if (Array.isArray(d)) return d
-        if (d?.data && Array.isArray(d.data)) return d.data
-        if (d?.rows && Array.isArray(d.rows)) return d.rows
-        if (d?.result && Array.isArray(d.result)) return d.result
-        if (d?.manager_list && Array.isArray(d.manager_list)) return d.manager_list
-        if (d?.faculty_list && Array.isArray(d.faculty_list)) return d.faculty_list
-        if (d?.course_list && Array.isArray(d.course_list)) return d.course_list
-        if (d?.managers && Array.isArray(d.managers)) return d.managers
-        if (d?.faculties && Array.isArray(d.faculties)) return d.faculties
-        if (d?.courses && Array.isArray(d.courses)) return d.courses
-        return []
-      }
-
       const coursesData = extractData(coursesRes)
       const managersData = extractData(managersRes)
       const facultiesData = extractData(facultiesRes)
-
-      console.log('[v0] Extracted courses:', coursesData)
-      console.log('[v0] Extracted managers:', managersData)
-      console.log('[v0] Extracted faculties:', facultiesData)
-
-      setCourses(coursesData)
-      setManagers(managersData)
-      setFaculties(facultiesData)
     } catch (err) {
       console.error('Failed to fetch dropdown data:', err)
     }
@@ -194,33 +165,32 @@ function Batch() {
         return []
       }
 
-      console.log('[v0] Edit - Managers response:', managersRes.data)
-      console.log('[v0] Edit - Faculties response:', facultiesRes.data)
+      // Extract all data first
+      const coursesData = extractData(coursesRes)
+      const managersData = extractData(managersRes)
+      const facultiesData = extractData(facultiesRes)
 
-      // Set dropdowns FIRST
-      setCourses(extractData(coursesRes))
-      setManagers(extractData(managersRes))
-      setFaculties(extractData(facultiesRes))
+      let batchData = batchRes.data.data || batchRes.data
+      if (Array.isArray(batchData)) batchData = batchData[0]
 
-      let data = batchRes.data.data || batchRes.data
-      if (Array.isArray(data)) data = data[0]
-
-      // THEN set form
+      // Set all state together before opening modal
+      setCourses(coursesData)
+      setManagers(managersData)
+      setFaculties(facultiesData)
       setForm({
-        name: data.name || '',
-        manager_id: String(data.manager_id || ''),
-        faculty_id: String(data.faculty_id || ''),
-        course_id: String(data.course_id || ''),
-        description: data.description || '',
-        batch_status: data.batch_status || 'upcoming',
-        batch_category: data.batch_category || 'weekday',
-        batch_mode: data.batch_mode || 'online',
-        batch_time: data.batch_time || '',
-        start_date: data.start_date ? data.start_date.split('T')[0] : '',
-        end_date: data.end_date ? data.end_date.split('T')[0] : ''
+        name: batchData.name || '',
+        manager_id: String(batchData.manager_id || ''),
+        faculty_id: String(batchData.faculty_id || ''),
+        course_id: String(batchData.course_id || ''),
+        description: batchData.description || '',
+        batch_status: batchData.batch_status || 'upcoming',
+        batch_category: batchData.batch_category || 'weekday',
+        batch_mode: batchData.batch_mode || 'online',
+        batch_time: batchData.batch_time || '',
+        start_date: batchData.start_date ? batchData.start_date.split('T')[0] : '',
+        end_date: batchData.end_date ? batchData.end_date.split('T')[0] : ''
       })
-
-      setEditId(data.id || id)
+      setEditId(batchData.id || id)
       setIsModalOpen(true)
 
     } catch (err) {
