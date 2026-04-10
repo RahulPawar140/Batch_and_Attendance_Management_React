@@ -59,10 +59,20 @@ const extractData = (response) => {
 }
 
 const getLabel = (obj, ...fields) => {
+  // Try each provided field name first
   for (const f of fields) {
-    if (obj[f]) return obj[f]
+    if (obj[f] && String(obj[f]).trim() !== '') return obj[f]
   }
-  return obj.id ?? ''
+  // Handle split first_name / last_name
+  if (obj.first_name || obj.last_name) {
+    return `${obj.first_name || ''} ${obj.last_name || ''}`.trim()
+  }
+  // Handle firstName / lastName (camelCase)
+  if (obj.firstName || obj.lastName) {
+    return `${obj.firstName || ''} ${obj.lastName || ''}`.trim()
+  }
+  // Last resort — show the id so it's never blank
+  return String(obj.id ?? '')
 }
 
 const emptyForm = {
@@ -109,9 +119,19 @@ function Batch() {
         axios.get(`${MANAGERS_API}/get_manager_list`),
         axios.get(`${FACULTIES_API}/get_faculty_list`)
       ])
-      setCourses(extractData(coursesRes))
-      setManagers(extractData(managersRes))
-      setFaculties(extractData(facultiesRes))
+
+      const managersData = extractData(managersRes)
+      const facultiesData = extractData(facultiesRes)
+      const coursesData = extractData(coursesRes)
+
+      // ── Debug: remove once names appear correctly ──
+      console.log('Manager fields:', managersData[0])
+      console.log('Faculty fields:', facultiesData[0])
+      console.log('Course fields:', coursesData[0])
+
+      setCourses(coursesData)
+      setManagers(managersData)
+      setFaculties(facultiesData)
     } catch (err) {
       console.error('Failed to fetch dropdown data:', err)
     }
@@ -160,10 +180,10 @@ function Batch() {
       const managersData = extractData(managersRes)
       const facultiesData = extractData(facultiesRes)
 
-      // Debug — remove once confirmed working
-      console.log('Managers sample:', managersData[0])
-      console.log('Faculties sample:', facultiesData[0])
-      console.log('Courses sample:', coursesData[0])
+      // ── Debug: remove once names appear correctly ──
+      console.log('Manager fields:', managersData[0])
+      console.log('Faculty fields:', facultiesData[0])
+      console.log('Course fields:', coursesData[0])
 
       let batchData = batchRes.data.data || batchRes.data
       if (Array.isArray(batchData)) batchData = batchData[0]
@@ -239,15 +259,6 @@ function Batch() {
 
   // ─── Search / sort ─────────────────────────────────────────────────────────
   const handleSearch = () => { setPageIndex(1); fetchBatches() }
-
-  const handleSort = (column) => {
-    if (sortBy === column) {
-      setSortOrder(sortOrder === 'ASC' ? 'DESC' : 'ASC')
-    } else {
-      setSortBy(column)
-      setSortOrder('ASC')
-    }
-  }
 
   // ─── Modal ─────────────────────────────────────────────────────────────────
   const openCreateModal = () => {
@@ -361,6 +372,7 @@ function Batch() {
                 key={batch.id}
                 className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col hover:shadow-md transition-shadow"
               >
+                {/* Card Header */}
                 <div className={`${headerColor} px-4 pt-4 pb-8 relative`}>
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0 flex-1">
@@ -374,6 +386,7 @@ function Batch() {
                   </div>
                 </div>
 
+                {/* Card Body */}
                 <div className="px-4 pt-3 pb-3 flex flex-col gap-2 flex-1">
                   <div className="flex flex-wrap gap-1.5">
                     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium capitalize ${statusColors[batch.batch_status] || 'bg-slate-100 text-slate-600'}`}>
@@ -418,6 +431,7 @@ function Batch() {
                   </div>
                 </div>
 
+                {/* Card Footer */}
                 <div className="flex items-center justify-end gap-1 px-4 py-2.5 border-t border-slate-100 bg-slate-50">
                   <button
                     onClick={() => handleEdit(batch.id)}
@@ -476,6 +490,7 @@ function Batch() {
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={closeModal}></div>
           <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-2xl mx-4 overflow-hidden max-h-[90vh] overflow-y-auto">
 
+            {/* Modal Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 sticky top-0 bg-white z-10">
               <h2 className="text-lg font-semibold text-slate-800">
                 {editId ? 'Edit Batch' : 'Add New Batch'}
@@ -485,6 +500,7 @@ function Batch() {
               </button>
             </div>
 
+            {/* Modal Form */}
             <form onSubmit={handleSubmit} className="p-6 space-y-5">
 
               {/* Batch Name */}
@@ -516,7 +532,7 @@ function Batch() {
                     <option value="">Select Course</option>
                     {courses.map((course) => (
                       <option key={course.id} value={String(course.id)}>
-                        {getLabel(course, 'name', 'course_name', 'title')}
+                        {getLabel(course, 'name', 'course_name', 'title', 'course_title', 'courseName')}
                       </option>
                     ))}
                   </select>
@@ -535,7 +551,7 @@ function Batch() {
                     <option value="">Select Manager</option>
                     {managers.map((manager) => (
                       <option key={manager.id} value={String(manager.id)}>
-                        {getLabel(manager, 'name', 'manager_name', 'full_name')}
+                        {getLabel(manager, 'name', 'manager_name', 'full_name', 'fullName', 'username', 'employee_name', 'managerName')}
                       </option>
                     ))}
                   </select>
@@ -554,7 +570,7 @@ function Batch() {
                     <option value="">Select Faculty</option>
                     {faculties.map((faculty) => (
                       <option key={faculty.id} value={String(faculty.id)}>
-                        {getLabel(faculty, 'name', 'faculty_name', 'full_name')}
+                        {getLabel(faculty, 'name', 'faculty_name', 'full_name', 'fullName', 'username', 'employee_name', 'facultyName')}
                       </option>
                     ))}
                   </select>
@@ -662,6 +678,7 @@ function Batch() {
                 />
               </div>
 
+              {/* Footer Buttons */}
               <div className="flex items-center justify-end gap-3 pt-4">
                 <button
                   type="button"
