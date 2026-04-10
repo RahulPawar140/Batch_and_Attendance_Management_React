@@ -155,9 +155,9 @@ function Batch() {
 
       setForm({
         name: data.name || '',
-        manager_id: data.manager_id || '',
-        faculty_id: data.faculty_id || '',
-        course_id: data.course_id || '',
+        manager_id: String(data.manager_id || ''),
+        faculty_id: String(data.faculty_id || ''),
+        course_id: String(data.course_id || ''),
         description: data.description || '',
         batch_status: data.batch_status || 'upcoming',
         batch_category: data.batch_category || 'weekday',
@@ -561,7 +561,7 @@ function Batch() {
                   >
                     <option value="">Select Course</option>
                     {courses.map((course) => (
-                      <option key={course.id} value={course.id}>
+                      <option key={course.id} value={String(course.id)}>
                         {course.name}
                       </option>
                     ))}
@@ -582,7 +582,7 @@ function Batch() {
                   >
                     <option value="">Select Manager</option>
                     {managers.map((manager) => (
-                      <option key={manager.id} value={manager.id}>
+                      <option key={manager.id} value={String(manager.id)}>
                         {manager.name}
                       </option>
                     ))}
@@ -603,7 +603,7 @@ function Batch() {
                   >
                     <option value="">Select Faculty</option>
                     {faculties.map((faculty) => (
-                      <option key={faculty.id} value={faculty.id}>
+                      <option key={faculty.id} value={String(faculty.id)}>
                         {faculty.name}
                       </option>
                     ))}
