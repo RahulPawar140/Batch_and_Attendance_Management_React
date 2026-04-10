@@ -275,7 +275,15 @@ function Batch() {
       year: 'numeric'
     })
   }
+  const getManagerName = (id) => {
+    const manager = managers.find((m) => m.id === id)
+    return manager ? manager.name : '-'
+  }
 
+  const getFacultyName = (id) => {
+    const faculty = faculties.find((f) => f.id === id)
+    return faculty ? faculty.name : '-'
+  }
   return (
     <div className="space-y-6 min-w-0">
       {/* Page Header */}
@@ -446,10 +454,11 @@ function Batch() {
                       {batch.course_name || '-'}
                     </td>
                     <td className="px-4 py-4 text-sm text-slate-600">
-                      {batch.manager_name || '-'}
+                      {getManagerName(batch.manager_id)}
                     </td>
+
                     <td className="px-4 py-4 text-sm text-slate-600">
-                      {batch.faculty_name || '-'}
+                      {getFacultyName(batch.faculty_id)}
                     </td>
                     <td className="px-4 py-4">
                       <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium capitalize ${statusColors[batch.batch_status] || 'bg-slate-100 text-slate-600'}`}>
