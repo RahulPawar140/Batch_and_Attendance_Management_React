@@ -43,11 +43,9 @@ const extractData = (response) => {
   return []
 }
 
-// Combine first_name + last_name (managers & faculties)
 const fullName = (obj) =>
   `${obj.first_name || ''} ${obj.last_name || ''}`.trim() || String(obj.id ?? '')
 
-// Course label — uses `name` field
 const courseLabel = (obj) =>
   obj.name || obj.course_name || obj.title || String(obj.id ?? '')
 
@@ -78,6 +76,14 @@ function Batch() {
   const [searchText, setSearchText] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
   const [modeFilter, setModeFilter] = useState('')
+
+  // ── Client-side filtering (guaranteed fallback) ──────────────────────────
+  const filteredBatches = batches.filter((batch) => {
+    const matchStatus = !statusFilter || batch.batch_status === statusFilter
+    const matchMode = !modeFilter || batch.batch_mode === modeFilter
+    const matchSearch = !searchText || batch.name?.toLowerCase().includes(searchText.toLowerCase())
+    return matchStatus && matchMode && matchSearch
+  })
 
   // ── Fetch dropdowns ──────────────────────────────────────────────────────
   const fetchDropdownData = async () => {
@@ -212,7 +218,9 @@ function Batch() {
 
   const formatDate = (dateStr) => {
     if (!dateStr) return '-'
-    return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+    return new Date(dateStr).toLocaleDateString('en-US', {
+      month: 'short', day: 'numeric', year: 'numeric'
+    })
   }
 
   // ── Render ───────────────────────────────────────────────────────────────
@@ -237,6 +245,8 @@ function Batch() {
       {/* Filters */}
       <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-200">
         <div className="flex flex-wrap items-center gap-4">
+
+          {/* Search */}
           <div className="relative flex-1 min-w-[200px]">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
             <input
@@ -248,33 +258,87 @@ function Batch() {
               className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
             />
           </div>
-          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-primary-500">
+
+          {/* Status Filter */}
+          <select
+            value={statusFilter}
+            onChange={(e) => { setStatusFilter(e.target.value); setPageIndex(1) }}
+            className="px-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-primary-500"
+          >
             <option value="">All Status</option>
             <option value="upcoming">Upcoming</option>
             <option value="ongoing">Ongoing</option>
             <option value="completed">Completed</option>
             <option value="cancelled">Cancelled</option>
           </select>
-          <select value={modeFilter} onChange={(e) => setModeFilter(e.target.value)}
-            className="px-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-primary-500">
+
+          {/* Mode Filter */}
+          <select
+            value={modeFilter}
+            onChange={(e) => { setModeFilter(e.target.value); setPageIndex(1) }}
+            className="px-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-primary-500"
+          >
             <option value="">All Modes</option>
             <option value="online">Online</option>
             <option value="offline">Offline</option>
             <option value="hybrid">Hybrid</option>
           </select>
-          <select value={pageSize} onChange={(e) => setPageSize(Number(e.target.value))}
-            className="px-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-primary-500">
+
+          {/* Page Size */}
+          <select
+            value={pageSize}
+            onChange={(e) => setPageSize(Number(e.target.value))}
+            className="px-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-primary-500"
+          >
             <option value={5}>5 per page</option>
             <option value={10}>10 per page</option>
             <option value={25}>25 per page</option>
             <option value={50}>50 per page</option>
           </select>
-          <button onClick={handleSearch}
-            className="px-4 py-2.5 bg-slate-800 text-white rounded-lg hover:bg-slate-700 transition-colors text-sm font-medium">
+
+          {/* Search Button */}
+          <button
+            onClick={handleSearch}
+            className="px-4 py-2.5 bg-slate-800 text-white rounded-lg hover:bg-slate-700 transition-colors text-sm font-medium"
+          >
             Search
           </button>
+
+          {/* Clear Filters */}
+          {(statusFilter || modeFilter || searchText) && (
+            <button
+              onClick={() => { setStatusFilter(''); setModeFilter(''); setSearchText(''); setPageIndex(1) }}
+              className="px-4 py-2.5 bg-red-50 text-red-600 border border-red-200 rounded-lg hover:bg-red-100 transition-colors text-sm font-medium"
+            >
+              Clear Filters
+            </button>
+          )}
         </div>
+
+        {/* Active filter tags */}
+        {(statusFilter || modeFilter) && (
+          <div className="flex flex-wrap gap-2 mt-3">
+            {statusFilter && (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-50 text-blue-700 border border-blue-200 rounded-full text-xs font-medium">
+                Status: {statusFilter}
+                <button onClick={() => setStatusFilter('')} className="hover:text-blue-900">
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            )}
+            {modeFilter && (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-purple-50 text-purple-700 border border-purple-200 rounded-full text-xs font-medium">
+                Mode: {modeFilter}
+                <button onClick={() => setModeFilter('')} className="hover:text-purple-900">
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            )}
+            <span className="text-xs text-slate-500 self-center">
+              {filteredBatches.length} result{filteredBatches.length !== 1 ? 's' : ''} found
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Cards */}
@@ -283,12 +347,14 @@ function Batch() {
           <div className="w-6 h-6 border-2 border-primary-600 border-t-transparent rounded-full animate-spin"></div>
           <span className="ml-3 text-slate-500">Loading batches...</span>
         </div>
-      ) : batches.length > 0 ? (
+      ) : filteredBatches.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-          {batches.map((batch) => (
-            <div key={batch.id}
-              className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col hover:shadow-md transition-shadow">
-
+          {filteredBatches.map((batch) => (
+            <div
+              key={batch.id}
+              className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col hover:shadow-md transition-shadow"
+            >
+              {/* Card Header */}
               <div className={`${statusHeaderColors[batch.batch_status] || 'bg-slate-500'} px-4 pt-4 pb-8`}>
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0 flex-1">
@@ -302,6 +368,7 @@ function Batch() {
                 </div>
               </div>
 
+              {/* Card Body */}
               <div className="px-4 pt-3 pb-3 flex flex-col gap-2 flex-1">
                 <div className="flex flex-wrap gap-1.5">
                   <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium capitalize ${statusColors[batch.batch_status] || 'bg-slate-100 text-slate-600'}`}>
@@ -317,6 +384,7 @@ function Batch() {
                     {batch.batch_category || '-'}
                   </span>
                 </div>
+
                 <div className="space-y-1.5 mt-1">
                   {batch.faculty_name && (
                     <div className="flex items-center gap-2 text-xs text-slate-600">
@@ -345,13 +413,20 @@ function Batch() {
                 </div>
               </div>
 
+              {/* Card Footer */}
               <div className="flex items-center justify-end gap-1 px-4 py-2.5 border-t border-slate-100 bg-slate-50">
-                <button onClick={() => handleEdit(batch.id)}
-                  className="p-2 text-slate-500 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors" title="Edit">
+                <button
+                  onClick={() => handleEdit(batch.id)}
+                  className="p-2 text-slate-500 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
+                  title="Edit"
+                >
                   <Edit2 className="w-4 h-4" />
                 </button>
-                <button onClick={() => openDeleteModal(batch)}
-                  className="p-2 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Delete">
+                <button
+                  onClick={() => openDeleteModal(batch)}
+                  className="p-2 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                  title="Delete"
+                >
                   <Trash2 className="w-4 h-4" />
                 </button>
               </div>
@@ -361,24 +436,42 @@ function Batch() {
       ) : (
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 px-6 py-16 text-center">
           <Users className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-          <p className="text-slate-500 font-medium">No batches found</p>
-          <p className="text-slate-400 text-sm mt-1">Add your first batch to get started.</p>
+          <p className="text-slate-500 font-medium">
+            {statusFilter || modeFilter ? 'No batches match the selected filters' : 'No batches found'}
+          </p>
+          <p className="text-slate-400 text-sm mt-1">
+            {statusFilter || modeFilter ? 'Try changing or clearing the filters.' : 'Add your first batch to get started.'}
+          </p>
+          {(statusFilter || modeFilter) && (
+            <button
+              onClick={() => { setStatusFilter(''); setModeFilter('') }}
+              className="mt-4 px-4 py-2 text-sm font-medium text-primary-600 bg-primary-50 rounded-lg hover:bg-primary-100 transition-colors"
+            >
+              Clear Filters
+            </button>
+          )}
         </div>
       )}
 
       {/* Pagination */}
       <div className="flex items-center justify-between bg-white rounded-xl px-6 py-4 shadow-sm border border-slate-200">
         <p className="text-sm text-slate-600">
-          Page {pageIndex} — Showing {batches.length} {batches.length === 1 ? 'batch' : 'batches'}
+          Page {pageIndex} — Showing {filteredBatches.length} {filteredBatches.length === 1 ? 'batch' : 'batches'}
         </p>
         <div className="flex items-center gap-2">
-          <button onClick={() => setPageIndex(pageIndex - 1)} disabled={pageIndex === 1}
-            className="flex items-center gap-1 px-3 py-2 text-sm font-medium text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+          <button
+            onClick={() => setPageIndex(pageIndex - 1)}
+            disabled={pageIndex === 1}
+            className="flex items-center gap-1 px-3 py-2 text-sm font-medium text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
             <ChevronLeft className="w-4 h-4" /> Prev
           </button>
           <span className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg">{pageIndex}</span>
-          <button onClick={() => setPageIndex(pageIndex + 1)} disabled={batches.length < pageSize}
-            className="flex items-center gap-1 px-3 py-2 text-sm font-medium text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+          <button
+            onClick={() => setPageIndex(pageIndex + 1)}
+            disabled={filteredBatches.length < pageSize}
+            className="flex items-center gap-1 px-3 py-2 text-sm font-medium text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
             Next <ChevronRight className="w-4 h-4" />
           </button>
         </div>
@@ -391,7 +484,9 @@ function Batch() {
           <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-2xl mx-4 overflow-hidden max-h-[90vh] overflow-y-auto">
 
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 sticky top-0 bg-white z-10">
-              <h2 className="text-lg font-semibold text-slate-800">{editId ? 'Edit Batch' : 'Add New Batch'}</h2>
+              <h2 className="text-lg font-semibold text-slate-800">
+                {editId ? 'Edit Batch' : 'Add New Batch'}
+              </h2>
               <button onClick={closeModal} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">
                 <X className="w-5 h-5" />
               </button>
@@ -402,14 +497,16 @@ function Batch() {
               {/* Batch Name */}
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1.5">Batch Name *</label>
-                <input type="text" name="name" value={form.name} onChange={handleChange} required
+                <input
+                  type="text" name="name" value={form.name} onChange={handleChange} required
                   placeholder="Enter batch name"
-                  className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500" />
+                  className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
+                />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
-                {/* Course — uses `name` field */}
+                {/* Course */}
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1.5">Course *</label>
                   <select name="course_id" value={form.course_id} onChange={handleChange} required
@@ -421,7 +518,7 @@ function Batch() {
                   </select>
                 </div>
 
-                {/* Manager — uses first_name + last_name */}
+                {/* Manager */}
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1.5">Manager *</label>
                   <select name="manager_id" value={form.manager_id} onChange={handleChange} required
@@ -433,7 +530,7 @@ function Batch() {
                   </select>
                 </div>
 
-                {/* Faculty — uses first_name + last_name */}
+                {/* Faculty */}
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1.5">Faculty *</label>
                   <select name="faculty_id" value={form.faculty_id} onChange={handleChange} required
@@ -481,32 +578,40 @@ function Batch() {
                 {/* Batch Time */}
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1.5">Batch Time *</label>
-                  <input type="text" name="batch_time" value={form.batch_time} onChange={handleChange} required
+                  <input
+                    type="text" name="batch_time" value={form.batch_time} onChange={handleChange} required
                     placeholder="e.g., 6:00 PM - 9:00 PM"
-                    className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500" />
+                    className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
+                  />
                 </div>
 
                 {/* Start Date */}
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1.5">Start Date *</label>
-                  <input type="date" name="start_date" value={form.start_date} onChange={handleChange} required
-                    className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500" />
+                  <input
+                    type="date" name="start_date" value={form.start_date} onChange={handleChange} required
+                    className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
+                  />
                 </div>
 
                 {/* End Date */}
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1.5">End Date *</label>
-                  <input type="date" name="end_date" value={form.end_date} onChange={handleChange} required
-                    className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500" />
+                  <input
+                    type="date" name="end_date" value={form.end_date} onChange={handleChange} required
+                    className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
+                  />
                 </div>
               </div>
 
               {/* Description */}
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1.5">Description</label>
-                <textarea name="description" value={form.description} onChange={handleChange} rows={3}
+                <textarea
+                  name="description" value={form.description} onChange={handleChange} rows={3}
                   placeholder="Enter batch description"
-                  className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 resize-none" />
+                  className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 resize-none"
+                />
               </div>
 
               <div className="flex items-center justify-end gap-3 pt-4">
