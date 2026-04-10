@@ -101,9 +101,24 @@ function Batch() {
         axios.get(`${FACULTIES_API}/get_faculty_list`)
       ])
 
+      const extractData = (response) => {
+        const d = response.data
+        if (Array.isArray(d)) return d
+        if (d?.data && Array.isArray(d.data)) return d.data
+        if (d?.rows && Array.isArray(d.rows)) return d.rows
+        if (d?.result && Array.isArray(d.result)) return d.result
+        return []
+      }
+
       const coursesData = extractData(coursesRes)
       const managersData = extractData(managersRes)
       const facultiesData = extractData(facultiesRes)
+
+      // ✅ THIS WAS MISSING
+      setCourses(coursesData)
+      setManagers(managersData)
+      setFaculties(facultiesData)
+
     } catch (err) {
       console.error('Failed to fetch dropdown data:', err)
     }
