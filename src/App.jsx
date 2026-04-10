@@ -6,6 +6,7 @@ import Courses from './pages/Courses'
 import Manager from './pages/Manager'
 import Faculties from './pages/Faculties'
 import Students from './pages/Students'
+import Batch from './pages/Batch'
 
 function App() {
   return (
@@ -18,6 +19,7 @@ function App() {
         <Route path="manager" element={<Manager />} />
         <Route path="faculties" element={<Faculties />} />
         <Route path="students" element={<Students />} />
+        <Route path="batches" element={<Batch />} />
       </Route>
     </Routes>
   )
