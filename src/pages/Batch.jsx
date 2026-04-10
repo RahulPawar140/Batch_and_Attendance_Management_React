@@ -1,22 +1,9 @@
 import { useEffect, useState } from 'react'
 import axios from 'axios'
 import {
-  Plus,
-  Search,
-  Edit2,
-  Trash2,
-  ChevronLeft,
-  ChevronRight,
-  X,
-  Users,
-  AlertTriangle,
-  Calendar,
-  Clock,
-  Monitor,
-  MapPin,
-  Wifi,
-  BookOpen,
-  GraduationCap
+  Plus, Search, Edit2, Trash2, ChevronLeft, ChevronRight,
+  X, Users, AlertTriangle, Calendar, Clock, Monitor,
+  MapPin, Wifi, BookOpen, GraduationCap
 } from 'lucide-react'
 
 const API = 'http://localhost:9998/batches'
@@ -30,25 +17,23 @@ const statusColors = {
   completed: 'bg-slate-100 text-slate-600',
   cancelled: 'bg-red-100 text-red-700'
 }
-
 const statusHeaderColors = {
   upcoming: 'bg-blue-600',
   ongoing: 'bg-emerald-600',
   completed: 'bg-slate-500',
   cancelled: 'bg-red-500'
 }
-
 const modeColors = {
   online: 'bg-purple-100 text-purple-700',
   offline: 'bg-amber-100 text-amber-700',
   hybrid: 'bg-cyan-100 text-cyan-700'
 }
-
 const categoryColors = {
   weekday: 'bg-indigo-100 text-indigo-700',
   weekend: 'bg-pink-100 text-pink-700'
 }
 
+// ── Helpers ────────────────────────────────────────────────────────────────
 const extractData = (response) => {
   const d = response.data
   if (Array.isArray(d)) return d
@@ -58,37 +43,21 @@ const extractData = (response) => {
   return []
 }
 
-const getLabel = (obj, ...fields) => {
-  // Try each provided field name first
-  for (const f of fields) {
-    if (obj[f] && String(obj[f]).trim() !== '') return obj[f]
-  }
-  // Handle split first_name / last_name
-  if (obj.first_name || obj.last_name) {
-    return `${obj.first_name || ''} ${obj.last_name || ''}`.trim()
-  }
-  // Handle firstName / lastName (camelCase)
-  if (obj.firstName || obj.lastName) {
-    return `${obj.firstName || ''} ${obj.lastName || ''}`.trim()
-  }
-  // Last resort — show the id so it's never blank
-  return String(obj.id ?? '')
-}
+// Combine first_name + last_name (managers & faculties)
+const fullName = (obj) =>
+  `${obj.first_name || ''} ${obj.last_name || ''}`.trim() || String(obj.id ?? '')
+
+// Course label — uses `name` field
+const courseLabel = (obj) =>
+  obj.name || obj.course_name || obj.title || String(obj.id ?? '')
 
 const emptyForm = {
-  name: '',
-  manager_id: '',
-  faculty_id: '',
-  course_id: '',
-  description: '',
-  batch_status: 'upcoming',
-  batch_category: 'weekday',
-  batch_mode: 'online',
-  batch_time: '',
-  start_date: '',
-  end_date: ''
+  name: '', manager_id: '', faculty_id: '', course_id: '',
+  description: '', batch_status: 'upcoming', batch_category: 'weekday',
+  batch_mode: 'online', batch_time: '', start_date: '', end_date: ''
 }
 
+// ── Component ──────────────────────────────────────────────────────────────
 function Batch() {
   const [batches, setBatches] = useState([])
   const [loading, setLoading] = useState(true)
@@ -100,7 +69,6 @@ function Batch() {
 
   const [form, setForm] = useState(emptyForm)
   const [editId, setEditId] = useState(null)
-
   const [deleteModal, setDeleteModal] = useState({ isOpen: false, batch: null })
 
   const [pageSize, setPageSize] = useState(5)
@@ -111,7 +79,7 @@ function Batch() {
   const [statusFilter, setStatusFilter] = useState('')
   const [modeFilter, setModeFilter] = useState('')
 
-  // ─── Fetch dropdown data ───────────────────────────────────────────────────
+  // ── Fetch dropdowns ──────────────────────────────────────────────────────
   const fetchDropdownData = async () => {
     try {
       const [coursesRes, managersRes, facultiesRes] = await Promise.all([
@@ -119,25 +87,15 @@ function Batch() {
         axios.get(`${MANAGERS_API}/get_manager_list`),
         axios.get(`${FACULTIES_API}/get_faculty_list`)
       ])
-
-      const managersData = extractData(managersRes)
-      const facultiesData = extractData(facultiesRes)
-      const coursesData = extractData(coursesRes)
-
-      // ── Debug: remove once names appear correctly ──
-      console.log('Manager fields:', managersData[0])
-      console.log('Faculty fields:', facultiesData[0])
-      console.log('Course fields:', coursesData[0])
-
-      setCourses(coursesData)
-      setManagers(managersData)
-      setFaculties(facultiesData)
+      setCourses(extractData(coursesRes))
+      setManagers(extractData(managersRes))
+      setFaculties(extractData(facultiesRes))
     } catch (err) {
       console.error('Failed to fetch dropdown data:', err)
     }
   }
 
-  // ─── Fetch batches ─────────────────────────────────────────────────────────
+  // ── Fetch batches ────────────────────────────────────────────────────────
   const fetchBatches = async () => {
     setLoading(true)
     try {
@@ -165,7 +123,7 @@ function Batch() {
   useEffect(() => { fetchDropdownData() }, [])
   useEffect(() => { fetchBatches() }, [pageIndex, pageSize, sortBy, sortOrder, statusFilter, modeFilter])
 
-  // ─── Edit ──────────────────────────────────────────────────────────────────
+  // ── Edit ─────────────────────────────────────────────────────────────────
   const handleEdit = async (id) => {
     try {
       setLoading(true)
@@ -176,23 +134,12 @@ function Batch() {
         axios.get(`${FACULTIES_API}/get_faculty_list`)
       ])
 
-      const coursesData = extractData(coursesRes)
-      const managersData = extractData(managersRes)
-      const facultiesData = extractData(facultiesRes)
-
-      // ── Debug: remove once names appear correctly ──
-      console.log('Manager fields:', managersData[0])
-      console.log('Faculty fields:', facultiesData[0])
-      console.log('Course fields:', coursesData[0])
+      setCourses(extractData(coursesRes))
+      setManagers(extractData(managersRes))
+      setFaculties(extractData(facultiesRes))
 
       let batchData = batchRes.data.data || batchRes.data
       if (Array.isArray(batchData)) batchData = batchData[0]
-
-      console.log('Batch data:', batchData)
-
-      setCourses(coursesData)
-      setManagers(managersData)
-      setFaculties(facultiesData)
 
       setForm({
         name: batchData.name || '',
@@ -216,7 +163,7 @@ function Batch() {
     }
   }
 
-  // ─── Form handlers ─────────────────────────────────────────────────────────
+  // ── Form handlers ────────────────────────────────────────────────────────
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value })
 
   const handleSubmit = async (e) => {
@@ -241,7 +188,7 @@ function Batch() {
     }
   }
 
-  // ─── Delete ────────────────────────────────────────────────────────────────
+  // ── Delete ───────────────────────────────────────────────────────────────
   const openDeleteModal = (batch) => setDeleteModal({ isOpen: true, batch })
   const closeDeleteModal = () => setDeleteModal({ isOpen: false, batch: null })
 
@@ -257,30 +204,18 @@ function Batch() {
     }
   }
 
-  // ─── Search / sort ─────────────────────────────────────────────────────────
+  // ── Search / modal ───────────────────────────────────────────────────────
   const handleSearch = () => { setPageIndex(1); fetchBatches() }
 
-  // ─── Modal ─────────────────────────────────────────────────────────────────
-  const openCreateModal = () => {
-    setForm(emptyForm)
-    setEditId(null)
-    setIsModalOpen(true)
-  }
-
-  const closeModal = () => {
-    setIsModalOpen(false)
-    setForm(emptyForm)
-    setEditId(null)
-  }
+  const openCreateModal = () => { setForm(emptyForm); setEditId(null); setIsModalOpen(true) }
+  const closeModal = () => { setIsModalOpen(false); setForm(emptyForm); setEditId(null) }
 
   const formatDate = (dateStr) => {
     if (!dateStr) return '-'
-    return new Date(dateStr).toLocaleDateString('en-US', {
-      month: 'short', day: 'numeric', year: 'numeric'
-    })
+    return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
   }
 
-  // ─── Render ────────────────────────────────────────────────────────────────
+  // ── Render ───────────────────────────────────────────────────────────────
   return (
     <div className="space-y-6 min-w-0">
 
@@ -313,45 +248,30 @@ function Batch() {
               className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
             />
           </div>
-
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-primary-500"
-          >
+          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}
+            className="px-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-primary-500">
             <option value="">All Status</option>
             <option value="upcoming">Upcoming</option>
             <option value="ongoing">Ongoing</option>
             <option value="completed">Completed</option>
             <option value="cancelled">Cancelled</option>
           </select>
-
-          <select
-            value={modeFilter}
-            onChange={(e) => setModeFilter(e.target.value)}
-            className="px-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-primary-500"
-          >
+          <select value={modeFilter} onChange={(e) => setModeFilter(e.target.value)}
+            className="px-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-primary-500">
             <option value="">All Modes</option>
             <option value="online">Online</option>
             <option value="offline">Offline</option>
             <option value="hybrid">Hybrid</option>
           </select>
-
-          <select
-            value={pageSize}
-            onChange={(e) => setPageSize(Number(e.target.value))}
-            className="px-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-primary-500"
-          >
+          <select value={pageSize} onChange={(e) => setPageSize(Number(e.target.value))}
+            className="px-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-primary-500">
             <option value={5}>5 per page</option>
             <option value={10}>10 per page</option>
             <option value={25}>25 per page</option>
             <option value={50}>50 per page</option>
           </select>
-
-          <button
-            onClick={handleSearch}
-            className="px-4 py-2.5 bg-slate-800 text-white rounded-lg hover:bg-slate-700 transition-colors text-sm font-medium"
-          >
+          <button onClick={handleSearch}
+            className="px-4 py-2.5 bg-slate-800 text-white rounded-lg hover:bg-slate-700 transition-colors text-sm font-medium">
             Search
           </button>
         </div>
@@ -365,92 +285,78 @@ function Batch() {
         </div>
       ) : batches.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-          {batches.map((batch) => {
-            const headerColor = statusHeaderColors[batch.batch_status] || 'bg-slate-500'
-            return (
-              <div
-                key={batch.id}
-                className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col hover:shadow-md transition-shadow"
-              >
-                {/* Card Header */}
-                <div className={`${headerColor} px-4 pt-4 pb-8 relative`}>
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0 flex-1">
-                      <h3 className="font-semibold text-white text-base leading-tight line-clamp-2">{batch.name}</h3>
-                      {batch.course_name && <p className="text-white/80 text-xs mt-1 font-medium truncate">{batch.course_name}</p>}
-                      {batch.manager_name && <p className="text-white/70 text-xs mt-0.5 truncate">{batch.manager_name}</p>}
-                    </div>
-                    <div className="w-11 h-11 rounded-full bg-white/20 flex items-center justify-center shrink-0 border-2 border-white/30">
-                      <Users className="w-5 h-5 text-white" />
-                    </div>
-                  </div>
-                </div>
+          {batches.map((batch) => (
+            <div key={batch.id}
+              className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col hover:shadow-md transition-shadow">
 
-                {/* Card Body */}
-                <div className="px-4 pt-3 pb-3 flex flex-col gap-2 flex-1">
-                  <div className="flex flex-wrap gap-1.5">
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium capitalize ${statusColors[batch.batch_status] || 'bg-slate-100 text-slate-600'}`}>
-                      {batch.batch_status || '-'}
-                    </span>
-                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium capitalize ${modeColors[batch.batch_mode] || 'bg-slate-100 text-slate-600'}`}>
-                      {batch.batch_mode === 'online' && <Wifi className="w-3 h-3" />}
-                      {batch.batch_mode === 'offline' && <MapPin className="w-3 h-3" />}
-                      {batch.batch_mode === 'hybrid' && <Monitor className="w-3 h-3" />}
-                      {batch.batch_mode || '-'}
-                    </span>
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium capitalize ${categoryColors[batch.batch_category] || 'bg-slate-100 text-slate-600'}`}>
-                      {batch.batch_category || '-'}
-                    </span>
+              <div className={`${statusHeaderColors[batch.batch_status] || 'bg-slate-500'} px-4 pt-4 pb-8`}>
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <h3 className="font-semibold text-white text-base leading-tight line-clamp-2">{batch.name}</h3>
+                    {batch.course_name && <p className="text-white/80 text-xs mt-1 font-medium truncate">{batch.course_name}</p>}
+                    {batch.manager_name && <p className="text-white/70 text-xs mt-0.5 truncate">{batch.manager_name}</p>}
                   </div>
-
-                  <div className="space-y-1.5 mt-1">
-                    {batch.faculty_name && (
-                      <div className="flex items-center gap-2 text-xs text-slate-600">
-                        <GraduationCap className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                        <span className="truncate">{batch.faculty_name}</span>
-                      </div>
-                    )}
-                    {batch.batch_time && (
-                      <div className="flex items-center gap-2 text-xs text-slate-600">
-                        <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                        <span className="truncate">{batch.batch_time}</span>
-                      </div>
-                    )}
-                    {(batch.start_date || batch.end_date) && (
-                      <div className="flex items-center gap-2 text-xs text-slate-600">
-                        <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                        <span className="truncate">{formatDate(batch.start_date)} – {formatDate(batch.end_date)}</span>
-                      </div>
-                    )}
-                    {batch.description && (
-                      <div className="flex items-start gap-2 text-xs text-slate-500">
-                        <BookOpen className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
-                        <span className="line-clamp-2">{batch.description}</span>
-                      </div>
-                    )}
+                  <div className="w-11 h-11 rounded-full bg-white/20 flex items-center justify-center shrink-0 border-2 border-white/30">
+                    <Users className="w-5 h-5 text-white" />
                   </div>
-                </div>
-
-                {/* Card Footer */}
-                <div className="flex items-center justify-end gap-1 px-4 py-2.5 border-t border-slate-100 bg-slate-50">
-                  <button
-                    onClick={() => handleEdit(batch.id)}
-                    className="p-2 text-slate-500 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
-                    title="Edit batch"
-                  >
-                    <Edit2 className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => openDeleteModal(batch)}
-                    className="p-2 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                    title="Delete batch"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
                 </div>
               </div>
-            )
-          })}
+
+              <div className="px-4 pt-3 pb-3 flex flex-col gap-2 flex-1">
+                <div className="flex flex-wrap gap-1.5">
+                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium capitalize ${statusColors[batch.batch_status] || 'bg-slate-100 text-slate-600'}`}>
+                    {batch.batch_status || '-'}
+                  </span>
+                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium capitalize ${modeColors[batch.batch_mode] || 'bg-slate-100 text-slate-600'}`}>
+                    {batch.batch_mode === 'online' && <Wifi className="w-3 h-3" />}
+                    {batch.batch_mode === 'offline' && <MapPin className="w-3 h-3" />}
+                    {batch.batch_mode === 'hybrid' && <Monitor className="w-3 h-3" />}
+                    {batch.batch_mode || '-'}
+                  </span>
+                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium capitalize ${categoryColors[batch.batch_category] || 'bg-slate-100 text-slate-600'}`}>
+                    {batch.batch_category || '-'}
+                  </span>
+                </div>
+                <div className="space-y-1.5 mt-1">
+                  {batch.faculty_name && (
+                    <div className="flex items-center gap-2 text-xs text-slate-600">
+                      <GraduationCap className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                      <span className="truncate">{batch.faculty_name}</span>
+                    </div>
+                  )}
+                  {batch.batch_time && (
+                    <div className="flex items-center gap-2 text-xs text-slate-600">
+                      <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                      <span className="truncate">{batch.batch_time}</span>
+                    </div>
+                  )}
+                  {(batch.start_date || batch.end_date) && (
+                    <div className="flex items-center gap-2 text-xs text-slate-600">
+                      <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                      <span className="truncate">{formatDate(batch.start_date)} – {formatDate(batch.end_date)}</span>
+                    </div>
+                  )}
+                  {batch.description && (
+                    <div className="flex items-start gap-2 text-xs text-slate-500">
+                      <BookOpen className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
+                      <span className="line-clamp-2">{batch.description}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-1 px-4 py-2.5 border-t border-slate-100 bg-slate-50">
+                <button onClick={() => handleEdit(batch.id)}
+                  className="p-2 text-slate-500 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors" title="Edit">
+                  <Edit2 className="w-4 h-4" />
+                </button>
+                <button onClick={() => openDeleteModal(batch)}
+                  className="p-2 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Delete">
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          ))}
         </div>
       ) : (
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 px-6 py-16 text-center">
@@ -466,19 +372,13 @@ function Batch() {
           Page {pageIndex} — Showing {batches.length} {batches.length === 1 ? 'batch' : 'batches'}
         </p>
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => setPageIndex(pageIndex - 1)}
-            disabled={pageIndex === 1}
-            className="flex items-center gap-1 px-3 py-2 text-sm font-medium text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
+          <button onClick={() => setPageIndex(pageIndex - 1)} disabled={pageIndex === 1}
+            className="flex items-center gap-1 px-3 py-2 text-sm font-medium text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
             <ChevronLeft className="w-4 h-4" /> Prev
           </button>
           <span className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg">{pageIndex}</span>
-          <button
-            onClick={() => setPageIndex(pageIndex + 1)}
-            disabled={batches.length < pageSize}
-            className="flex items-center gap-1 px-3 py-2 text-sm font-medium text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
+          <button onClick={() => setPageIndex(pageIndex + 1)} disabled={batches.length < pageSize}
+            className="flex items-center gap-1 px-3 py-2 text-sm font-medium text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
             Next <ChevronRight className="w-4 h-4" />
           </button>
         </div>
@@ -490,88 +390,57 @@ function Batch() {
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={closeModal}></div>
           <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-2xl mx-4 overflow-hidden max-h-[90vh] overflow-y-auto">
 
-            {/* Modal Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 sticky top-0 bg-white z-10">
-              <h2 className="text-lg font-semibold text-slate-800">
-                {editId ? 'Edit Batch' : 'Add New Batch'}
-              </h2>
+              <h2 className="text-lg font-semibold text-slate-800">{editId ? 'Edit Batch' : 'Add New Batch'}</h2>
               <button onClick={closeModal} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            {/* Modal Form */}
             <form onSubmit={handleSubmit} className="p-6 space-y-5">
 
               {/* Batch Name */}
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1.5">Batch Name *</label>
-                <input
-                  type="text"
-                  name="name"
-                  value={form.name}
-                  onChange={handleChange}
-                  required
+                <input type="text" name="name" value={form.name} onChange={handleChange} required
                   placeholder="Enter batch name"
-                  className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
-                />
+                  className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500" />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
-                {/* Course */}
+                {/* Course — uses `name` field */}
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1.5">Course *</label>
-                  <select
-                    name="course_id"
-                    value={form.course_id}
-                    onChange={handleChange}
-                    required
-                    className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
-                  >
+                  <select name="course_id" value={form.course_id} onChange={handleChange} required
+                    className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500">
                     <option value="">Select Course</option>
-                    {courses.map((course) => (
-                      <option key={course.id} value={String(course.id)}>
-                        {getLabel(course, 'name', 'course_name', 'title', 'course_title', 'courseName')}
-                      </option>
+                    {courses.map((c) => (
+                      <option key={c.id} value={String(c.id)}>{courseLabel(c)}</option>
                     ))}
                   </select>
                 </div>
 
-                {/* Manager */}
+                {/* Manager — uses first_name + last_name */}
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1.5">Manager *</label>
-                  <select
-                    name="manager_id"
-                    value={form.manager_id}
-                    onChange={handleChange}
-                    required
-                    className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
-                  >
+                  <select name="manager_id" value={form.manager_id} onChange={handleChange} required
+                    className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500">
                     <option value="">Select Manager</option>
-                    {managers.map((manager) => (
-                      <option key={manager.id} value={String(manager.id)}>
-                        {getLabel(manager, 'name', 'manager_name', 'full_name', 'fullName', 'username', 'employee_name', 'managerName')}
-                      </option>
+                    {managers.map((m) => (
+                      <option key={m.id} value={String(m.id)}>{fullName(m)}</option>
                     ))}
                   </select>
                 </div>
 
-                {/* Faculty */}
+                {/* Faculty — uses first_name + last_name */}
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1.5">Faculty *</label>
-                  <select
-                    name="faculty_id"
-                    value={form.faculty_id}
-                    onChange={handleChange}
-                    required
-                    className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
-                  >
+                  <select name="faculty_id" value={form.faculty_id} onChange={handleChange} required
+                    className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500">
                     <option value="">Select Faculty</option>
-                    {faculties.map((faculty) => (
-                      <option key={faculty.id} value={String(faculty.id)}>
-                        {getLabel(faculty, 'name', 'faculty_name', 'full_name', 'fullName', 'username', 'employee_name', 'facultyName')}
-                      </option>
+                    {faculties.map((f) => (
+                      <option key={f.id} value={String(f.id)}>{fullName(f)}</option>
                     ))}
                   </select>
                 </div>
@@ -579,13 +448,8 @@ function Batch() {
                 {/* Status */}
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1.5">Status *</label>
-                  <select
-                    name="batch_status"
-                    value={form.batch_status}
-                    onChange={handleChange}
-                    required
-                    className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
-                  >
+                  <select name="batch_status" value={form.batch_status} onChange={handleChange} required
+                    className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500">
                     <option value="upcoming">Upcoming</option>
                     <option value="ongoing">Ongoing</option>
                     <option value="completed">Completed</option>
@@ -596,13 +460,8 @@ function Batch() {
                 {/* Mode */}
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1.5">Mode *</label>
-                  <select
-                    name="batch_mode"
-                    value={form.batch_mode}
-                    onChange={handleChange}
-                    required
-                    className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
-                  >
+                  <select name="batch_mode" value={form.batch_mode} onChange={handleChange} required
+                    className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500">
                     <option value="online">Online</option>
                     <option value="offline">Offline</option>
                     <option value="hybrid">Hybrid</option>
@@ -612,13 +471,8 @@ function Batch() {
                 {/* Category */}
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1.5">Category *</label>
-                  <select
-                    name="batch_category"
-                    value={form.batch_category}
-                    onChange={handleChange}
-                    required
-                    className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
-                  >
+                  <select name="batch_category" value={form.batch_category} onChange={handleChange} required
+                    className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500">
                     <option value="weekday">Weekday</option>
                     <option value="weekend">Weekend</option>
                   </select>
@@ -627,70 +481,41 @@ function Batch() {
                 {/* Batch Time */}
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1.5">Batch Time *</label>
-                  <input
-                    type="text"
-                    name="batch_time"
-                    value={form.batch_time}
-                    onChange={handleChange}
-                    required
+                  <input type="text" name="batch_time" value={form.batch_time} onChange={handleChange} required
                     placeholder="e.g., 6:00 PM - 9:00 PM"
-                    className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
-                  />
+                    className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500" />
                 </div>
 
                 {/* Start Date */}
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1.5">Start Date *</label>
-                  <input
-                    type="date"
-                    name="start_date"
-                    value={form.start_date}
-                    onChange={handleChange}
-                    required
-                    className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
-                  />
+                  <input type="date" name="start_date" value={form.start_date} onChange={handleChange} required
+                    className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500" />
                 </div>
 
                 {/* End Date */}
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1.5">End Date *</label>
-                  <input
-                    type="date"
-                    name="end_date"
-                    value={form.end_date}
-                    onChange={handleChange}
-                    required
-                    className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
-                  />
+                  <input type="date" name="end_date" value={form.end_date} onChange={handleChange} required
+                    className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500" />
                 </div>
               </div>
 
               {/* Description */}
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1.5">Description</label>
-                <textarea
-                  name="description"
-                  value={form.description}
-                  onChange={handleChange}
-                  rows={3}
+                <textarea name="description" value={form.description} onChange={handleChange} rows={3}
                   placeholder="Enter batch description"
-                  className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 resize-none"
-                />
+                  className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 resize-none" />
               </div>
 
-              {/* Footer Buttons */}
               <div className="flex items-center justify-end gap-3 pt-4">
-                <button
-                  type="button"
-                  onClick={closeModal}
-                  className="px-4 py-2.5 text-sm font-medium text-slate-600 bg-slate-100 rounded-lg hover:bg-slate-200 transition-colors"
-                >
+                <button type="button" onClick={closeModal}
+                  className="px-4 py-2.5 text-sm font-medium text-slate-600 bg-slate-100 rounded-lg hover:bg-slate-200 transition-colors">
                   Cancel
                 </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2.5 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors"
-                >
+                <button type="submit"
+                  className="px-4 py-2.5 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors">
                   {editId ? 'Update Batch' : 'Create Batch'}
                 </button>
               </div>
@@ -699,7 +524,7 @@ function Batch() {
         </div>
       )}
 
-      {/* Delete Confirmation Modal */}
+      {/* Delete Modal */}
       {deleteModal.isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={closeDeleteModal}></div>
@@ -718,16 +543,12 @@ function Batch() {
                 This action cannot be undone. All data associated with this batch will be permanently removed.
               </p>
               <div className="flex items-center justify-center gap-3">
-                <button
-                  onClick={closeDeleteModal}
-                  className="px-6 py-2.5 text-sm font-medium text-slate-600 bg-slate-100 rounded-lg hover:bg-slate-200 transition-colors"
-                >
+                <button onClick={closeDeleteModal}
+                  className="px-6 py-2.5 text-sm font-medium text-slate-600 bg-slate-100 rounded-lg hover:bg-slate-200 transition-colors">
                   Cancel
                 </button>
-                <button
-                  onClick={confirmDelete}
-                  className="px-6 py-2.5 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
-                >
+                <button onClick={confirmDelete}
+                  className="px-6 py-2.5 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors">
                   Delete Batch
                 </button>
               </div>
