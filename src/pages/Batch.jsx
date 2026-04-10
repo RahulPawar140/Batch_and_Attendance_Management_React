@@ -17,9 +17,9 @@ import {
   MapPin
 } from 'lucide-react'
 
-const API = 'http://localhost:9998/batch'
+const API = 'http://localhost:9998/batches'
 const COURSES_API = 'http://localhost:9998/courses'
-const MANAGERS_API = 'http://localhost:9998/managers'
+const MANAGERS_API = 'http://localhost:9998/manager'
 const FACULTIES_API = 'http://localhost:9998/faculties'
 
 // Status badge colors
@@ -47,7 +47,7 @@ function Batch() {
   const [batches, setBatches] = useState([])
   const [loading, setLoading] = useState(true)
   const [isModalOpen, setIsModalOpen] = useState(false)
-  
+
   // Dropdown data
   const [courses, setCourses] = useState([])
   const [managers, setManagers] = useState([])
@@ -77,7 +77,7 @@ function Batch() {
   const [sortBy, setSortBy] = useState('id')
   const [sortOrder, setSortOrder] = useState('ASC')
   const [searchText, setSearchText] = useState('')
-  
+
   // Additional filters
   const [statusFilter, setStatusFilter] = useState('')
   const [modeFilter, setModeFilter] = useState('')
@@ -90,11 +90,11 @@ function Batch() {
         axios.get(`${MANAGERS_API}/get_manager_list`),
         axios.get(`${FACULTIES_API}/get_faculty_list`)
       ])
-      
+
       const coursesData = coursesRes.data.data || coursesRes.data
       const managersData = managersRes.data.data || managersRes.data
       const facultiesData = facultiesRes.data.data || facultiesRes.data
-      
+
       setCourses(Array.isArray(coursesData) ? coursesData : [])
       setManagers(Array.isArray(managersData) ? managersData : [])
       setFaculties(Array.isArray(facultiesData) ? facultiesData : [])
