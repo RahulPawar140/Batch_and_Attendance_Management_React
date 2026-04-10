@@ -149,10 +149,25 @@ function Batch() {
   // GET SINGLE BATCH (for edit)
   const handleEdit = async (id) => {
     try {
-      const res = await axios.get(`${API}/get_batch/${id}`)
-      let data = res.data.data || res.data
+      setLoading(true)
+
+      // Fetch everything together
+      const [batchRes, coursesRes, managersRes, facultiesRes] = await Promise.all([
+        axios.get(`${API}/get_batch/${id}`),
+        axios.get(`${COURSES_API}/get_course_list`),
+        axios.get(`${MANAGERS_API}/get_manager_list`),
+        axios.get(`${FACULTIES_API}/get_faculty_list`)
+      ])
+
+      // Set dropdowns FIRST
+      setCourses(coursesRes.data.data || coursesRes.data || [])
+      setManagers(managersRes.data.data || managersRes.data || [])
+      setFaculties(facultiesRes.data.data || facultiesRes.data || [])
+
+      let data = batchRes.data.data || batchRes.data
       if (Array.isArray(data)) data = data[0]
 
+      // THEN set form
       setForm({
         name: data.name || '',
         manager_id: String(data.manager_id || ''),
@@ -166,11 +181,14 @@ function Batch() {
         start_date: data.start_date ? data.start_date.split('T')[0] : '',
         end_date: data.end_date ? data.end_date.split('T')[0] : ''
       })
+
       setEditId(data.id || id)
       setIsModalOpen(true)
+
     } catch (err) {
       console.error('Edit fetch error:', err)
-      alert('Failed to fetch batch details')
+    } finally {
+      setLoading(false)
     }
   }
 
