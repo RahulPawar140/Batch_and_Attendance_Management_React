@@ -9,12 +9,14 @@ import {
   ChevronRight,
   X,
   Users,
-  ArrowUpDown,
   AlertTriangle,
   Calendar,
   Clock,
   Monitor,
-  MapPin
+  MapPin,
+  Wifi,
+  BookOpen,
+  GraduationCap
 } from 'lucide-react'
 
 const API = 'http://localhost:9998/batches'
@@ -28,6 +30,14 @@ const statusColors = {
   ongoing: 'bg-emerald-100 text-emerald-700',
   completed: 'bg-slate-100 text-slate-600',
   cancelled: 'bg-red-100 text-red-700'
+}
+
+// Card header gradient per status
+const statusHeaderColors = {
+  upcoming: 'bg-blue-600',
+  ongoing: 'bg-emerald-600',
+  completed: 'bg-slate-500',
+  cancelled: 'bg-red-500'
 }
 
 // Mode badge colors
@@ -275,15 +285,6 @@ function Batch() {
       year: 'numeric'
     })
   }
-  const getManagerName = (id) => {
-    const manager = managers.find((m) => m.id === id)
-    return manager ? manager.name : '-'
-  }
-
-  const getFacultyName = (id) => {
-    const faculty = faculties.find((f) => f.id === id)
-    return faculty ? faculty.name : '-'
-  }
   return (
     <div className="space-y-6 min-w-0">
       {/* Page Header */}
@@ -364,190 +365,144 @@ function Batch() {
         </div>
       </div>
 
-      {/* Table Card */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[1200px]">
-            <thead>
-              <tr className="bg-slate-50 border-b border-slate-200">
-                <th
-                  onClick={() => handleSort('name')}
-                  className="px-4 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider cursor-pointer hover:bg-slate-100 transition-colors"
-                >
-                  <div className="flex items-center gap-2">
-                    Batch Name
-                    <ArrowUpDown className={`w-4 h-4 ${sortBy === 'name' ? 'text-primary-600' : 'text-slate-400'}`} />
-                  </div>
-                </th>
-                <th className="px-4 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                  Course
-                </th>
-                <th className="px-4 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                  Manager
-                </th>
-                <th className="px-4 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                  Faculty
-                </th>
-                <th
-                  onClick={() => handleSort('batch_status')}
-                  className="px-4 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider cursor-pointer hover:bg-slate-100 transition-colors"
-                >
-                  <div className="flex items-center gap-2">
-                    Status
-                    <ArrowUpDown className={`w-4 h-4 ${sortBy === 'batch_status' ? 'text-primary-600' : 'text-slate-400'}`} />
-                  </div>
-                </th>
-                <th className="px-4 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                  Mode
-                </th>
-                <th className="px-4 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                  Category
-                </th>
-                <th className="px-4 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                  Time
-                </th>
-                <th
-                  onClick={() => handleSort('start_date')}
-                  className="px-4 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider cursor-pointer hover:bg-slate-100 transition-colors"
-                >
-                  <div className="flex items-center gap-2">
-                    Duration
-                    <ArrowUpDown className={`w-4 h-4 ${sortBy === 'start_date' ? 'text-primary-600' : 'text-slate-400'}`} />
-                  </div>
-                </th>
-                <th className="px-4 py-4 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {loading ? (
-                <tr>
-                  <td colSpan="10" className="px-6 py-12 text-center text-slate-500">
-                    <div className="flex items-center justify-center gap-2">
-                      <div className="w-5 h-5 border-2 border-primary-600 border-t-transparent rounded-full animate-spin"></div>
-                      Loading...
+      {/* Card Grid */}
+      {loading ? (
+        <div className="flex items-center justify-center py-20">
+          <div className="w-6 h-6 border-2 border-primary-600 border-t-transparent rounded-full animate-spin"></div>
+          <span className="ml-3 text-slate-500">Loading batches...</span>
+        </div>
+      ) : batches.length > 0 ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+          {batches.map((batch) => {
+            const headerColor = statusHeaderColors[batch.batch_status] || 'bg-slate-500'
+            return (
+              <div
+                key={batch.id}
+                className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col hover:shadow-md transition-shadow"
+              >
+                {/* Card Header */}
+                <div className={`${headerColor} px-4 pt-4 pb-8 relative`}>
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <h3 className="font-semibold text-white text-base leading-tight line-clamp-2">
+                        {batch.name}
+                      </h3>
+                      {batch.course_name && (
+                        <p className="text-white/80 text-xs mt-1 font-medium truncate">{batch.course_name}</p>
+                      )}
+                      {batch.manager_name && (
+                        <p className="text-white/70 text-xs mt-0.5 truncate">{batch.manager_name}</p>
+                      )}
                     </div>
-                  </td>
-                </tr>
-              ) : batches.length > 0 ? (
-                batches.map((batch) => (
-                  <tr key={batch.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-4 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-primary-100 rounded-lg flex items-center justify-center shrink-0">
-                          <Users className="w-5 h-5 text-primary-600" />
-                        </div>
-                        <div className="min-w-0">
-                          <span className="text-sm font-medium text-slate-800 block truncate max-w-[150px]">
-                            {batch.name}
-                          </span>
-                          {batch.description && (
-                            <span className="text-xs text-slate-500 block truncate max-w-[150px]">
-                              {batch.description}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-4 py-4 text-sm text-slate-600">
-                      {batch.course_name || '-'}
-                    </td>
-                    <td className="px-4 py-4 text-sm text-slate-600">
-                      {getManagerName(batch.manager_id)}
-                    </td>
+                    <div className="w-11 h-11 rounded-full bg-white/20 flex items-center justify-center shrink-0 border-2 border-white/30">
+                      <Users className="w-5 h-5 text-white" />
+                    </div>
+                  </div>
+                </div>
 
-                    <td className="px-4 py-4 text-sm text-slate-600">
-                      {getFacultyName(batch.faculty_id)}
-                    </td>
-                    <td className="px-4 py-4">
-                      <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium capitalize ${statusColors[batch.batch_status] || 'bg-slate-100 text-slate-600'}`}>
-                        {batch.batch_status || '-'}
-                      </span>
-                    </td>
-                    <td className="px-4 py-4">
-                      <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium capitalize ${modeColors[batch.batch_mode] || 'bg-slate-100 text-slate-600'}`}>
-                        {batch.batch_mode === 'online' && <Monitor className="w-3 h-3" />}
-                        {batch.batch_mode === 'offline' && <MapPin className="w-3 h-3" />}
-                        {batch.batch_mode || '-'}
-                      </span>
-                    </td>
-                    <td className="px-4 py-4">
-                      <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium capitalize ${categoryColors[batch.batch_category] || 'bg-slate-100 text-slate-600'}`}>
-                        {batch.batch_category || '-'}
-                      </span>
-                    </td>
-                    <td className="px-4 py-4">
-                      <div className="flex items-center gap-1 text-sm text-slate-600">
-                        <Clock className="w-3.5 h-3.5 text-slate-400" />
-                        <span className="whitespace-nowrap">{batch.batch_time || '-'}</span>
+                {/* Card Body */}
+                <div className="px-4 pt-3 pb-3 flex flex-col gap-2 flex-1">
+                  {/* Badges */}
+                  <div className="flex flex-wrap gap-1.5">
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium capitalize ${statusColors[batch.batch_status] || 'bg-slate-100 text-slate-600'}`}>
+                      {batch.batch_status || '-'}
+                    </span>
+                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium capitalize ${modeColors[batch.batch_mode] || 'bg-slate-100 text-slate-600'}`}>
+                      {batch.batch_mode === 'online' && <Wifi className="w-3 h-3" />}
+                      {batch.batch_mode === 'offline' && <MapPin className="w-3 h-3" />}
+                      {batch.batch_mode === 'hybrid' && <Monitor className="w-3 h-3" />}
+                      {batch.batch_mode || '-'}
+                    </span>
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium capitalize ${categoryColors[batch.batch_category] || 'bg-slate-100 text-slate-600'}`}>
+                      {batch.batch_category || '-'}
+                    </span>
+                  </div>
+
+                  {/* Info rows */}
+                  <div className="space-y-1.5 mt-1">
+                    {batch.faculty_name && (
+                      <div className="flex items-center gap-2 text-xs text-slate-600">
+                        <GraduationCap className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                        <span className="truncate">{batch.faculty_name}</span>
                       </div>
-                    </td>
-                    <td className="px-4 py-4">
-                      <div className="flex items-center gap-1 text-sm text-slate-600">
-                        <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                        <span className="whitespace-nowrap">
-                          {formatDate(batch.start_date)} - {formatDate(batch.end_date)}
+                    )}
+                    {batch.batch_time && (
+                      <div className="flex items-center gap-2 text-xs text-slate-600">
+                        <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                        <span className="truncate">{batch.batch_time}</span>
+                      </div>
+                    )}
+                    {(batch.start_date || batch.end_date) && (
+                      <div className="flex items-center gap-2 text-xs text-slate-600">
+                        <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                        <span className="truncate">
+                          {formatDate(batch.start_date)} – {formatDate(batch.end_date)}
                         </span>
                       </div>
-                    </td>
-                    <td className="px-4 py-4">
-                      <div className="flex items-center justify-end gap-2">
-                        <button
-                          onClick={() => handleEdit(batch.id)}
-                          className="p-2 text-slate-600 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
-                          title="Edit"
-                        >
-                          <Edit2 className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => openDeleteModal(batch)}
-                          className="p-2 text-slate-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                          title="Delete"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                    )}
+                    {batch.description && (
+                      <div className="flex items-start gap-2 text-xs text-slate-500">
+                        <BookOpen className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
+                        <span className="line-clamp-2">{batch.description}</span>
                       </div>
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="10" className="px-6 py-12 text-center text-slate-500">
-                    No batches found. Add your first batch!
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+                    )}
+                  </div>
+                </div>
 
-        {/* Pagination */}
-        <div className="flex items-center justify-between px-6 py-4 border-t border-slate-200 bg-slate-50">
-          <p className="text-sm text-slate-600">
-            Page {pageIndex} - Showing {batches.length} batches
-          </p>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setPageIndex(pageIndex - 1)}
-              disabled={pageIndex === 1}
-              className="flex items-center gap-1 px-3 py-2 text-sm font-medium text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              <ChevronLeft className="w-4 h-4" />
-              Prev
-            </button>
-            <span className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg">
-              {pageIndex}
-            </span>
-            <button
-              onClick={() => setPageIndex(pageIndex + 1)}
-              disabled={batches.length < pageSize}
-              className="flex items-center gap-1 px-3 py-2 text-sm font-medium text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              Next
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </div>
+                {/* Card Footer */}
+                <div className="flex items-center justify-end gap-1 px-4 py-2.5 border-t border-slate-100 bg-slate-50">
+                  <button
+                    onClick={() => handleEdit(batch.id)}
+                    className="p-2 text-slate-500 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
+                    title="Edit batch"
+                  >
+                    <Edit2 className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => openDeleteModal(batch)}
+                    className="p-2 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                    title="Delete batch"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      ) : (
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 px-6 py-16 text-center">
+          <Users className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+          <p className="text-slate-500 font-medium">No batches found</p>
+          <p className="text-slate-400 text-sm mt-1">Add your first batch to get started.</p>
+        </div>
+      )}
+
+      {/* Pagination */}
+      <div className="flex items-center justify-between bg-white rounded-xl px-6 py-4 shadow-sm border border-slate-200">
+        <p className="text-sm text-slate-600">
+          Page {pageIndex} — Showing {batches.length} {batches.length === 1 ? 'batch' : 'batches'}
+        </p>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setPageIndex(pageIndex - 1)}
+            disabled={pageIndex === 1}
+            className="flex items-center gap-1 px-3 py-2 text-sm font-medium text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            <ChevronLeft className="w-4 h-4" />
+            Prev
+          </button>
+          <span className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg">
+            {pageIndex}
+          </span>
+          <button
+            onClick={() => setPageIndex(pageIndex + 1)}
+            disabled={batches.length < pageSize}
+            className="flex items-center gap-1 px-3 py-2 text-sm font-medium text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            Next
+            <ChevronRight className="w-4 h-4" />
+          </button>
         </div>
       </div>
 
